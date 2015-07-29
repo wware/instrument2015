@@ -5,6 +5,7 @@ Then it computes the sample for the next time.
 */
 
 #define __SERIAL 0
+#define __ARDUINO 0
 
 #include <stdio.h>
 #include <stdint.h>
@@ -34,11 +35,9 @@ int main(void)
     printf("sampfreq = %lf\n", (double) SAMPLING_RATE);
     printf("samples = [\n");
 
-    v.setfreq(440);
-    v.keydown(1);
     for (t = 0; t < 3 * SAMPLING_RATE; t++) {
-        loop();
-        printf("%d,\n", v.output() >> 16);
+        compute_sample();
+        printf("%d,\n", ((v.output() >> 20) + 0x800) & 0xFFF);
         if (t == SAMPLING_RATE)
             v.keydown(0);
     }

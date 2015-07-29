@@ -6,6 +6,10 @@ Then it computes the sample for the next time.
 
 #if ! defined(__SERIAL)
 #define __SERIAL 1
+#endif
+
+#if ! defined(__ARDUINO)
+#define __ARDUINO 1
 #include <TimerOne.h>
 #endif
 
@@ -19,16 +23,24 @@ Then it computes the sample for the next time.
 #define ADSR_BITS   30
 #define ADSR_MAX (1 << ADSR_BITS)
 
-class ADSRParameters {
-public:
-    float _decay_in, _sustain_in;
-    uint32_t attack, decay, sustain, release;
+class Voice {
+    uint32_t state, value;    // adsr
+    uint32_t attack, decay, sustain, release, gap;
 
-    void set_decay_sustain() {
-        sustain = (uint32_t) (ADSR_MAX * _sustain_in);
-        decay = (uint32_t)
-            ((ADSR_MAX * DT) * ADSR_MAX /
-             (_decay_in * (ADSR_MAX - _sustain_in)));
+    uint32_t phase, dphase, waveform;  // oscillator
+
+public:
+
+    Voice() {
+        waveform = 1;
+    }
+    ~Voice() { }
+
+    void setfreq(float f) {
+        dphase = (int32_t)(0x100000000L * f / SAMPLING_RATE);
+    }
+    void setwaveform(int32_t x) {   // 0 for ramp, 1 for triangle
+        waveform = x;
     }
 
     void setA(float a) {
@@ -37,34 +49,14 @@ public:
     }
     void setD(float d) {
         if (d < 0.01) d = 0.01;
-        _decay_in = d;
-        set_decay_sustain();
+        decay = (int32_t)(ADSR_MAX * exp(-DT / d));
     }
     void setS(float s) {
-        _sustain_in = s;
-        set_decay_sustain();
+        sustain = (uint32_t) (ADSR_MAX * s);
     }
     void setR(float r) {
         if (r < 0.01) r = 0.01;
         release = (int32_t)(ADSR_MAX * exp(-DT / r));
-    }
-};
-
-class Voice {
-    ADSRParameters *params;
-    uint32_t state, value;    // adsr
-    uint32_t phase, dphase, waveform;  // oscillator
-public:
-    Voice(ADSRParameters *_params) {
-        params = _params;
-        waveform = 1;
-    }
-    ~Voice() { }
-    void setfreq(float f) {
-        dphase = (int32_t)(0x100000000 * f / SAMPLING_RATE);
-    }
-    void setwaveform(int32_t x) {   // 0 for ramp, 1 for triangle
-        waveform = x;
     }
 
     int adsr_state() {
@@ -83,36 +75,48 @@ public:
         uint64_t x;
         if (state == 1) {
             // attack
-            value += params->attack;
-            if (value >= ADSR_MAX)
+            value += attack;
+            if (value >= ADSR_MAX) {
                 state = 2;
+                gap = value - sustain;
+            }
         }
         else if (state == 2) {
             // decay
-            value -= params->decay;
-            if (value <= params->sustain) {
-                // sustain
-                value = params->sustain;
-                state = 3;
-            }
+            value = gap + sustain;
+            x = gap;
+            gap = (x * decay) >> ADSR_BITS;
         }
         else if (state == 0) {
             // release
             x = value;
-            value = (x * params->release) >> ADSR_BITS;
+            value = (x * release) >> ADSR_BITS;
         }
         phase += dphase;
     }
     int32_t output(void) {
         int64_t x;
-        if (waveform) {
+        switch (waveform) {
+        case 0:
+            // ramp
+            x = phase >> 1;
+            break;
+        case 1:
+            // triangle
             if (phase >= 0x80000000) {
                 x = ~phase;
             } else {
                 x = phase;
             }
-        } else {
-            x = phase >> 1;
+            break;
+        case 2:
+            // square
+            if (phase >= 0x80000000) {
+                x = 0x7fffffff;
+            } else {
+                x = -0x80000000;
+            }
+            break;
         }
         x = (x & 0x7fffffff) - 0x40000000;
         /*
@@ -121,11 +125,17 @@ public:
          */
         return (x * value) >> (ADSR_BITS - 1);
     }
+    int32_t signed_output(void) {
+        /*
+         * 12 bit signed output, both the Teensy and the Mac like this,
+         * though when there are multiple voices this will need more thought.
+         */
+        return ((output() >> 20) + 0x800) & 0xFFF;
+    }
 };
 
 
-ADSRParameters adsr;
-Voice v(&adsr);
+Voice v;
 
 
 int t = 0;
@@ -134,42 +144,45 @@ int t = 0;
 void setup() {
 #if __SERIAL
     Serial.begin(9600);
+#endif
+#if __ARDUINO
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(compute_sample);
-#endif
     delay(3000);
+#endif
     v.setfreq(440);
-    v.setwaveform(0);
+    v.setwaveform(1);
     v.keydown(1);
-    adsr.setA(0.1);
-    adsr.setD(0.5);
-    adsr.setS(0.2);
-    adsr.setR(0.4);
+    v.setA(0.2);
+    v.setD(0.3);
+    v.setS(0.6);
+    v.setR(0.6);
 }
 
 
 void compute_sample(void)
 {
-    analogWrite(A14, ((v.output() >> 20) + 0x800) & 0xFFF);
+#if __ARDUINO
+    analogWrite(A14, v.signed_output());
+#endif
     v.step();
 }
 
 void loop() {
+#if __ARDUINO
     char buf[20];
-#if __SERIAL
     if (t++ < 40) {
+#if __SERIAL
         Serial.print(v.adsr_state(), DEC);
-        Serial.print(" ");
-        sprintf(buf, "%08X", (unsigned int) adsr.sustain);
-        Serial.print(buf);
         Serial.print(" ");
         sprintf(buf, "%08X", (unsigned int) v.adsr_level());
         Serial.print(buf);
         Serial.println();
+#endif
         if (t == 20) v.keydown(0);
     }
-    //delayMicroseconds(20000);
+
     delay(50);
 #endif
 }
