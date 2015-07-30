@@ -36,12 +36,16 @@ int main(void)
     printf("sampfreq = %lf\n", (double) SAMPLING_RATE);
     printf("samples = [\n");
 
-    for (t = 0; t < 3 * SAMPLING_RATE; t++) {
+    for (t = 0; t < 4 * SAMPLING_RATE; t++) {
         x = 0;
         for (i = 0; i < 8; i++)
             x += v[i].output();
         compute_sample();
         printf("%lld,\n", ((x >> 23) + 0x800) & 0xFFF);
+        if (t == SAMPLING_RATE / 2) {
+            for (i = 0; i < 8; i++)
+                v[i].keydown(1);
+        }
         if (t == SAMPLING_RATE) {
             for (i = 0; i < 8; i++)
                 v[i].keydown(0);

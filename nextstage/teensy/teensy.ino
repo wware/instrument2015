@@ -45,7 +45,7 @@ public:
 
     void setA(float a) {
         if (a < 0.01) a = 0.01;
-        attack = (uint32_t) (ADSR_MAX * DT / a);
+        attack = (int32_t)(ADSR_MAX * exp(-DT / a));
     }
     void setD(float d) {
         if (d < 0.01) d = 0.01;
@@ -75,7 +75,9 @@ public:
         uint64_t x;
         if (state == 1) {
             // attack
-            value += attack;
+            value = (ADSR_MAX - gap) + ADSR_MAX;
+            x = gap;
+            gap = (x * attack) >> ADSR_BITS;
             if (value >= ADSR_MAX) {
                 state = 2;
                 gap = value - sustain;
@@ -91,6 +93,7 @@ public:
             // release
             x = value;
             value = (x * release) >> ADSR_BITS;
+            gap = (ADSR_MAX - value) + ADSR_MAX;
         }
         phase += dphase;
     }
@@ -141,10 +144,10 @@ int t = 0;
 
 void setup() {
     int i;
-#if __ARDUINO
 #if __SERIAL
     Serial.begin(9600);
 #endif
+#if __ARDUINO
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(compute_sample);
@@ -152,9 +155,8 @@ void setup() {
 #endif
     for (i = 0; i < 8; i++) {
         v[i].setwaveform(0);
-        v[i].keydown(1);
-        v[i].setA(0.2);
-        v[i].setD(0.3);
+        v[i].setA(0.1);
+        v[i].setD(0.4);
         v[i].setS(0.6);
         v[i].setR(0.6);
     }
@@ -194,7 +196,11 @@ void loop() {
 #if __ARDUINO
     int i;
     if (t++ < 60) {
-#if __SERIAL
+        if (t == 5) {
+            for (i = 0; i < 8; i++)
+                v[i].keydown(1);
+        }
+#if 0       // __SERIAL
         char buf[20];
         sprintf(buf, "%08X", (unsigned int) v[0].adsr_level());
         Serial.print(buf);
