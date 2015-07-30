@@ -23,6 +23,9 @@ Then it computes the sample for the next time.
 #define ADSR_BITS   30
 #define ADSR_MAX (1 << ADSR_BITS)
 
+/* 1 / (1 - 1/e), because exponential */
+#define BIGGER 1.5819767
+
 class Voice {
     uint32_t state, value;    // adsr
     uint32_t attack, decay, sustain, release, gap;
@@ -75,7 +78,7 @@ public:
         uint64_t x;
         if (state == 1) {
             // attack
-            value = (ADSR_MAX - gap) + ADSR_MAX;
+            value = (uint32_t) (BIGGER * ADSR_MAX - gap);
             x = gap;
             gap = (x * attack) >> ADSR_BITS;
             if (value >= ADSR_MAX) {
@@ -93,7 +96,7 @@ public:
             // release
             x = value;
             value = (x * release) >> ADSR_BITS;
-            gap = (ADSR_MAX - value) + ADSR_MAX;
+            gap = (uint32_t) (BIGGER * ADSR_MAX - value);
         }
         phase += dphase;
     }
