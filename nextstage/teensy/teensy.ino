@@ -5,7 +5,7 @@ Then it computes the sample for the next time.
 */
 
 #if ! defined(__SERIAL)
-#define __SERIAL 1
+#define __SERIAL 0
 #endif
 
 #if ! defined(__ARDUINO)
@@ -135,52 +135,75 @@ public:
 };
 
 
-Voice v;
-
+Voice v[8];
 
 int t = 0;
 
-
 void setup() {
+    int i;
+#if __ARDUINO
 #if __SERIAL
     Serial.begin(9600);
 #endif
-#if __ARDUINO
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(compute_sample);
     delay(3000);
 #endif
-    v.setfreq(440);
-    v.setwaveform(1);
-    v.keydown(1);
-    v.setA(0.2);
-    v.setD(0.3);
-    v.setS(0.6);
-    v.setR(0.6);
+    for (i = 0; i < 8; i++) {
+        v[i].setwaveform(0);
+        v[i].keydown(1);
+        v[i].setA(0.2);
+        v[i].setD(0.3);
+        v[i].setS(0.6);
+        v[i].setR(0.6);
+    }
+
+    v[0].setfreq(440);
+    v[1].setfreq(440 * 5 / 4);
+    v[2].setfreq(440 * 3 / 2);
+    v[3].setfreq(440 * 2);
+
+    v[4].setfreq(440         + 4);
+    v[5].setfreq(440 * 5 / 4 + 4);
+    v[6].setfreq(440 * 3 / 2 + 4);
+    v[7].setfreq(440 * 2     + 4);
 }
 
 
+uint32_t get_12_bit_value(void)
+{
+    int i;
+    int64_t x = 0;
+    for (i = 0; i < 8; i++)
+        x += v[i].output();
+    return ((x >> 23) + 0x800) & 0xFFF;
+}
+
 void compute_sample(void)
 {
+    int i;
 #if __ARDUINO
-    analogWrite(A14, v.signed_output());
+    analogWrite(A14, get_12_bit_value());
 #endif
-    v.step();
+    for (i = 0; i < 8; i++)
+        v[i].step();
 }
 
 void loop() {
 #if __ARDUINO
-    char buf[20];
-    if (t++ < 40) {
+    int i;
+    if (t++ < 60) {
 #if __SERIAL
-        Serial.print(v.adsr_state(), DEC);
-        Serial.print(" ");
-        sprintf(buf, "%08X", (unsigned int) v.adsr_level());
+        char buf[20];
+        sprintf(buf, "%08X", (unsigned int) v[0].adsr_level());
         Serial.print(buf);
         Serial.println();
 #endif
-        if (t == 20) v.keydown(0);
+        if (t == 50) {
+            for (i = 0; i < 8; i++)
+                v[i].keydown(0);
+        }
     }
 
     delay(50);

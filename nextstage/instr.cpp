@@ -28,7 +28,8 @@ Then it computes the sample for the next time.
 
 int main(void)
 {
-    int t;
+    int i, t;
+    int64_t x;
 
     setup();
 
@@ -36,10 +37,15 @@ int main(void)
     printf("samples = [\n");
 
     for (t = 0; t < 3 * SAMPLING_RATE; t++) {
+        x = 0;
+        for (i = 0; i < 8; i++)
+            x += v[i].output();
         compute_sample();
-        printf("%d,\n", ((v.output() >> 20) + 0x800) & 0xFFF);
-        if (t == SAMPLING_RATE)
-            v.keydown(0);
+        printf("%lld,\n", ((x >> 23) + 0x800) & 0xFFF);
+        if (t == SAMPLING_RATE) {
+            for (i = 0; i < 8; i++)
+                v[i].keydown(0);
+        }
     }
 
     printf("]\n");
