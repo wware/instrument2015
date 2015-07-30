@@ -95,7 +95,7 @@ public:
         phase += dphase;
     }
     int32_t output(void) {
-        int64_t x;
+        int64_t x = 0;
         switch (waveform) {
         case 0:
             // ramp
