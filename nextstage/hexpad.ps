@@ -1,0 +1,91 @@
+% Convert to PDF: ps2pdf hexpad.ps hexpad.pdf
+% Then go to Staples and get hexpad.pdf printed.
+
+% Cut out a reasonable rectangle, position it on the PVC,
+% use a large nail as a center punch.
+
+% Rotate to Landscape mode
+90 rotate 0 -612 translate
+
+/inch {
+    72 mul
+} def
+
+/RLT { rlineto } def
+/LT { lineto } def
+/MT { moveto } def
+/S { stroke } def
+
+/point {   % x y ->
+    2 dict begin
+    /y exch def
+    /x exch def
+    x y 0.125 inch add MT
+    x y 0.125 inch sub LT S
+    x 0.125 inch add y MT
+    x 0.125 inch sub y LT S
+    end
+} def
+
+/tan {   % angle -> result
+    dup sin
+    exch cos
+    div
+} def
+
+/hspace 0.875 inch def
+/vspace hspace 2 div 60 tan mul def
+
+% working with 3/4" copper hexagons from Etsy
+/hexagon {   % x y -> xnew ynew
+    2 copy
+    4 dict begin
+    /y exch def
+    /x exch def
+    /v 0.75 30 tan mul inch def
+    /v2 0.5 v mul def
+    x y v add MT
+    x 0.375 inch add y v2 add LT
+    x 0.375 inch add y v2 sub LT
+    x y v sub LT
+    x 0.375 inch sub y v2 sub LT
+    x 0.375 inch sub y v2 add LT
+    x y v add LT S
+    x y point
+    end
+    exch
+    hspace add
+    exch
+} def
+
+/skiphexagon {
+    exch
+    hspace add
+    exch
+} def
+
+100 100
+hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon
+pop pop
+
+100 hspace 2 div add 100 vspace add
+hexagon hexagon skiphexagon hexagon hexagon hexagon skiphexagon hexagon hexagon
+pop pop
+
+100 100 vspace 2 mul add
+hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon
+pop pop
+
+100 hspace 2 div add 100 vspace 3 mul add
+hexagon hexagon skiphexagon hexagon hexagon hexagon skiphexagon hexagon hexagon
+pop pop
+
+100 100 vspace 4 mul add
+hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon hexagon
+pop pop
+
+100 hspace 2 div add 100 vspace 5 mul add
+hexagon hexagon skiphexagon hexagon hexagon hexagon skiphexagon hexagon hexagon
+pop pop
+
+showpage
