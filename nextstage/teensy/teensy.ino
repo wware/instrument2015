@@ -4,6 +4,26 @@ samples. First it writes the previously computed sample to the serial DAC.
 Then it computes the sample for the next time.
 */
 
+#define ASSEMBLY_YNH_IO 0
+#if ASSEMBLY_YNH_IO
+/*
+ * I'm going to want to code stuff in assembly language.
+ * Here are some hacks for http://assembly.ynh.io/ which is an online
+ * ARM cross-compiler/assembler.
+ */
+#include <stdint.h>
+#define __ARDUINO 0
+#define HW_DEBUG 0
+#endif
+
+#if ! defined(HW_DEBUG)
+#define HW_DEBUG 1
+#endif
+
+#if HW_DEBUG
+#define __SERIAL 1
+#endif
+
 #if ! defined(__SERIAL)
 #define __SERIAL 0
 #endif
@@ -25,6 +45,14 @@ Then it computes the sample for the next time.
 
 /* 1 / (1 - 1/e), because exponential */
 #define BIGGER 1.5819767
+
+#define THRESHOLD 5
+
+struct gpio_port * const _PORTA = (struct gpio_port *) 0x400FF000;
+struct gpio_port * const _PORTB = (struct gpio_port *) 0x400FF040;
+struct gpio_port * const _PORTC = (struct gpio_port *) 0x400FF080;
+struct gpio_port * const _PORTD = (struct gpio_port *) 0x400FF0C0;
+struct gpio_port * const _PORTE = (struct gpio_port *) 0x400FF100;
 
 class Voice {
     uint32_t state, value;    // adsr
@@ -140,13 +168,95 @@ public:
     }
 };
 
-
 Voice v[8];
 
-int t = 0;
+class Key {
+    int id;
+    int previous, current;
+public:
+    Key *predecessor;
+    Key(int _id, int pitch) {
+        id = _id;
+        predecessor = NULL;
+        previous = current = 0;
+    }
+    int state(void) {
+        return current;
+    }
+    int keydown(void) {
+        return current && !previous;
+    }
+    int keyup(void) {
+        return !current && previous;
+    }
+    void check(void) {
+        uint32_t X = 0, Y = 0, portc = (uint32_t) _PORTC, chip = id >> 3;
+        digitalWrite(4, (id >> 2) & 1);
+        digitalWrite(3, (id >> 1) & 1);
+        digitalWrite(2, (id >> 0) & 1);
+        digitalWrite(5, chip == 0);
+        digitalWrite(6, chip == 1);
+        digitalWrite(7, chip == 2);
+        digitalWrite(8, chip == 3);
+        digitalWrite(9, chip == 4);
+        Y = 0;
+        // drive with PTC 4, detect with PTC 6
+        digitalWrite(10, LOW);
+#if (__ARDUINO || ASSEMBLY_YNH_IO)
+        asm volatile(
+            "mov %0, #0x10"                 "\n"
+            "str %0, [%2, #4]"              "\n"
+            "step1:"                        "\n"
+            "ldr %0, [%2, #16]"             "\n"
+            "ands %0, %0, #0x40"            "\n"
+            "bne step2"                     "\n"
+            "add %1, %1, #1"                "\n"
+            "b step1"                       "\n"
+            "step2:"                        "\n"
+            : "+r" (X), "+r" (Y), "+r" (portc)
+        );
+#endif
+        // Do we need debouncing with a capacitive touch keyboard?
+        previous = current;
+        current = Y > THRESHOLD;
+#if HW_DEBUG
+        if (keydown()) {
+            Serial.print("Key ");
+            Serial.print(id);
+            Serial.println(" pressed");
+            if (id < 8) {
+                v[id].keydown(1);
+            }
+        }
+        if (keyup() && id < 8) {
+            v[id].keydown(0);
+        }
+#endif
+    }
+};
+
+struct gpio_port {
+    uint32_t DOR;    // Data output register
+    uint32_t SOR;    // Set output register
+    uint32_t COR;    // Clear output register
+    uint32_t TOR;    // Toggle output register
+    uint32_t DIR;    // Data input register
+    uint32_t DDR;    // Data direction register
+};
+
+Key *keyboard;    // head of linked list
+
+void scan_keyboard(void) {
+    Key *k = keyboard;
+    while (k != NULL) {
+        k = k->predecessor;
+    }
+}
+
 
 void setup() {
     int i;
+    Key *k, *kprev = NULL;
 #if __SERIAL
     Serial.begin(9600);
 #endif
@@ -154,7 +264,9 @@ void setup() {
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(compute_sample);
-    delay(3000);
+    pinMode(11, INPUT_PULLUP);
+    pinMode(10, OUTPUT);
+    digitalWrite(10, LOW);
 #endif
     for (i = 0; i < 8; i++) {
         v[i].setwaveform(0);
@@ -173,6 +285,17 @@ void setup() {
     v[5].setfreq(440 * 5 / 4 + 4);
     v[6].setfreq(440 * 3 / 2 + 4);
     v[7].setfreq(440 * 2     + 4);
+
+#if HW_DEBUG
+    for (i = 0; i < 34; i++) {
+        k = new Key(i, (i < 17) ? i : (i - 5));
+        k->predecessor = kprev;
+        kprev = k;
+    }
+    // TODO the left-hand keyboard
+    // TODO read the softpots
+    keyboard = k;
+#endif
 }
 
 
@@ -195,27 +318,11 @@ void compute_sample(void)
         v[i].step();
 }
 
+
 void loop() {
-#if __ARDUINO
-    int i;
-    if (t++ < 60) {
-        if (t == 5) {
-            for (i = 0; i < 8; i++)
-                v[i].keydown(1);
-        }
-#if 0       // __SERIAL
-        char buf[20];
-        sprintf(buf, "%08X", (unsigned int) v[0].adsr_level());
-        Serial.print(buf);
-        Serial.println();
-#endif
-        if (t == 50) {
-            for (i = 0; i < 8; i++)
-                v[i].keydown(0);
-        }
-    }
-
-    delay(50);
-#endif
+    scan_keyboard();
+    // TODO reading soft pots
+    // TODO mapping keys to reachable pitches
+    // TODO assigning pitches to voices
+    // TODO tracking key up and key down events
 }
-

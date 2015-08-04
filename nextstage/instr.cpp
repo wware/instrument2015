@@ -6,6 +6,7 @@ Then it computes the sample for the next time.
 
 #define __SERIAL 0
 #define __ARDUINO 0
+#define HW_DEBUG 0
 
 #include <stdio.h>
 #include <stdint.h>
