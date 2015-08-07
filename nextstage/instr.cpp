@@ -4,12 +4,16 @@ samples. First it writes the previously computed sample to the serial DAC.
 Then it computes the sample for the next time.
 */
 
+#include <stdio.h>
+#include <stdint.h>
+
 #define __SERIAL 0
 #define __ARDUINO 0
 #define HW_DEBUG 0
 
-#include <stdio.h>
-#include <stdint.h>
+#define HIGH 1
+#define LOW 0
+
 #include "teensy/teensy.ino"
 
 #define _STEP  1.0594630943592953
@@ -42,7 +46,7 @@ int main(void)
         for (i = 0; i < 8; i++)
             x += v[i].output();
         compute_sample();
-        printf("%lld,\n", ((x >> 23) + 0x800) & 0xFFF);
+        printf("%lld,\n", (long long int) (((x >> 23) + 0x800) & 0xFFF));
         if (t == SAMPLING_RATE / 2) {
             for (i = 0; i < 8; i++)
                 v[i].keydown(1);

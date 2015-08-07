@@ -2,7 +2,7 @@ import math
 import os
 import aifc
 
-assert os.system("g++ -o foo instr.cpp") == 0
+assert os.system("g++ -Wall -g -o foo instr.cpp") == 0
 assert os.system("./foo > foo.py") == 0
 
 import foo
