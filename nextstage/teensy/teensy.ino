@@ -17,7 +17,7 @@ Then it computes the sample for the next time.
 #include <stdarg.h>
 #include <math.h>
 
-#define SAMPLING_RATE   40000
+#define SAMPLING_RATE   20000
 #define DT (1.0 / SAMPLING_RATE)
 
 #define ADSR_BITS   30
