@@ -3,7 +3,21 @@ pip install markdown
 python -m markdown README.md > README.html
 -->
 
-= Programming the Teensy
+The Tooba
+====
+
+The Tooba is an electronic musical instrument built into a piece of PVC tubing (hence the name). It borrows principles from the Moog-style analog music synthesizers of past decades.
+
+[![Video demo of the instrument](http://img.youtube.com/vi/QGhZ0tecp60/0.jpg)](https://www.youtube.com/watch?v=QGhZ0tecp60)
+
+Way back when, one of my friends in high school was a guy named [Dave Wilson](http://www.matrixsynth.com/2010/08/rip-david-hillel-wilson-curator-of-new.html) whose father got him into 1970s-era Moog-style analog electronic music synthesizers. Dave created a museum of historical synthesizers in his home in Nashua, New Hampshire. Throughout our high school and college years, we exchanged ideas and circuits and bits of lore for various synthesizer hacks.
+
+Music synthesizers of that era were actually special-purpose [analog computers](https://en.wikipedia.org/wiki/Analog_computer), performing arithmetic operations with [integrators, summers, and other such circuits](https://courses.engr.illinois.edu/ece486/labs/lab1/analog_computer_manual.pdf). These computations can be performed digitally by a microprocessor or special-purpose digital circuit (e.g. FPGA). So Dave and I both at various points and in various contexts wrote code to do that.
+
+Sound generation in the Tooba (and keyboard scanning and voice assignment) is done in [C++](https://github.com/wware/instrument2015/blob/master/nextstage/teensy/teensy.ino) running on a 32-bit ARM microcontroller.
+
+Programming the thing
+----
 
 I want to read the GPIO in assembly to accurately measure the period of the oscillator.
 
@@ -14,7 +28,8 @@ I want to read the GPIO in assembly to accurately measure the period of the osci
 * [A C header file](http://www.keil.com/dd/docs/arm/freescale/kinetis/mk20d7.h) for registers in the MK20DX.
 * [Some nice info](http://www.peter-cockerell.net/aalp/html/frames.html) on ARM assembly language.
 
-== Some earlier code
+Some earlier code
+----
 
 This code ran on the June prototype and measured the capacitance of the touch sensitive keyboard. The capacitance was used in the RC time constant of a free-running oscillator and the idea here is to get a measurement roughly proportional to the period.
 
