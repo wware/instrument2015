@@ -16,6 +16,7 @@ Then it computes the sample for the next time.
 #include "common.h"
 #include "voice.h"
 #include "key.h"
+#include "queue.h"
 
 Voice v[NUM_VOICES];
 
