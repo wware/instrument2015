@@ -1,19 +1,36 @@
 import math
 import os
-import aifc
+import sys
 
-assert os.system("g++ -Wall -g -o foo instr.cpp") == 0
-assert os.system("./foo > foo.py") == 0
+if sys.platform == 'linux2':
+    # Ubuntu
+    import wave
+    fname = "quux.wav"
+    player = "mplayer"
+else:
+    # Mac
+    import aifc as wave
+    fname = "quux.aiff"
+    player = "afplay"
+
+CMD = "g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo instr.cpp teensy/key.cpp teensy/voice.cpp"
+
+assert os.system(CMD) == 0
+assert os.system("./foo") == 0
+
+if 'gnuplot' in sys.argv[1:]:
+    os.system("echo \"plot 'foo.gp' using 1:3 with lines; pause 10\" | gnuplot")
+    sys.exit(0)
 
 import foo
 S = foo.samples
 
 try:
-    os.unlink("quux.aiff")
+    os.unlink(fname)
 except:
     pass
 
-q = aifc.open("quux.aiff", "wb")
+q = wave.open(fname, "wb")
 q.setnchannels(1)
 q.setsampwidth(2)
 q.setframerate(foo.sampfreq)
@@ -27,4 +44,4 @@ def f(x):
 q.writeframes("".join(map(f, S)))
 q.close()
 
-os.system("afplay quux.aiff")
+os.system(player + " " + fname)

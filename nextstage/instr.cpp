@@ -5,14 +5,15 @@ Then it computes the sample for the next time.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 
-#define __SERIAL 0
 #define __ARDUINO 0
-#define HW_DEBUG 0
 
 #define HIGH 1
 #define LOW 0
+
+#define ASSERT(cond)    assertion(cond, #cond)
 
 #include "teensy/teensy.ino"
 
@@ -31,31 +32,53 @@ Then it computes the sample for the next time.
 #define B(oct)       ((int) ((1 << oct) * _A * _STEP2))
 #define C(oct)       ((int) ((1 << oct) * _A * _STEP2 * _STEP))
 
+void assertion(int cond, const char *strcond)
+{
+    if (!cond) {
+        fprintf(stderr, "ASSERTION FAILED: %s\n", strcond);
+        exit(1);
+    }
+}
+
 int main(void)
 {
+    FILE *outf, *gp_outf;
     int i, t;
-    int64_t x;
+    int64_t x, y, max = (1L << 31);
 
     setup();
 
-    printf("sampfreq = %lf\n", (double) SAMPLING_RATE);
-    printf("samples = [\n");
+    gp_outf = fopen("foo.gp", "w");
+
+    outf = fopen("foo.py", "w");
+    fprintf(outf, "sampfreq = %lf\n", (double) SAMPLING_RATE);
+    fprintf(outf, "samples = [\n");
+
+    for (i = 0; i < NUM_VOICES; i++)
+        v[i].setfreq(200 + 0.2 * i);
 
     for (t = 0; t < 4 * SAMPLING_RATE; t++) {
         x = 0;
-        for (i = 0; i < 8; i++)
+        for (i = 0; i < NUM_VOICES; i++)
             x += v[i].output();
+        ASSERT(x > -max);
+        ASSERT(x < max);
         compute_sample();
-        printf("%lld,\n", (long long int) (((x >> 23) + 0x800) & 0xFFF));
+        // y = (long long int) (((x >> (21 + NUM_VOICE_BITS)) + 0x800) & 0xFFF);
+        y = get_12_bit_value();
+        fprintf(gp_outf, "%d %d %ld\n", t, v[0].adsr_level(), y);
+        fprintf(outf, "%ld,\n", y);
         if (t == SAMPLING_RATE / 2) {
-            for (i = 0; i < 8; i++)
+            for (i = 0; i < NUM_VOICES; i++)
                 v[i].keydown(1);
         }
         if (t == SAMPLING_RATE) {
-            for (i = 0; i < 8; i++)
+            for (i = 0; i < NUM_VOICES; i++)
                 v[i].keydown(0);
         }
     }
 
-    printf("]\n");
+    fprintf(outf, "]\n");
+    fclose(outf);
+    fclose(gp_outf);
 }
