@@ -19,15 +19,17 @@ Then it computes the sample for the next time.
 #include "queue.h"
 
 Voice v[NUM_VOICES];
-
 Key *keyboard[NUM_KEYS];
+Queue samples;
+
+void timer_interrupt(void);
 
 void setup() {
     int i;
 #if __ARDUINO
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
-    Timer1.attachInterrupt(compute_sample);
+    Timer1.attachInterrupt(timer_interrupt);
     pinMode(11, INPUT_PULLUP);
     pinMode(10, OUTPUT);
     digitalWrite(10, LOW);
@@ -69,19 +71,44 @@ uint32_t get_12_bit_value(void)
     return ((x >> (17 + NUM_VOICE_BITS)) + 0x800) & 0xFFF;
 }
 
-void compute_sample(void)
+void timer_interrupt(void)
 {
-    int i;
+    static uint8_t led_time;
+    uint32_t x;
+    if (samples.read(&x) == 0) {
 #if __ARDUINO
-    analogWrite(A14, get_12_bit_value());
+        analogWrite(A14, x);
 #endif
-    for (i = 0; i < NUM_VOICES; i++)
-        v[i].step();
+    } else {
+        led_time = 100;
+    }
+    if (led_time > 0) {
+        led_time--;
+#if __ARDUINO
+        digitalWrite(LED_BUILTIN, HIGH);
+#endif
+    } else {
+#if __ARDUINO
+        digitalWrite(LED_BUILTIN, LOW);
+#endif
+    }
 }
 
-
-void loop() {
+void compute_sample(void) {
     int i;
+    static uint32_t x, again = 0;
+
+    if (!again) {
+        for (i = 0; i < NUM_VOICES; i++)
+            v[i].step();
+        x = get_12_bit_value();
+    }
+    again = samples.write(x);
+}
+
+void loop(void) {
+    int i;
+
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
 

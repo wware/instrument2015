@@ -65,7 +65,7 @@ int main(void)
         ASSERT(x > -max);
         ASSERT(x < max);
         compute_sample();
-        y = get_12_bit_value();
+        ASSERT(samples.read((uint32_t *) &y) == 0);
 
         /* Numbers for Gnuplot */
         fprintf(gp_outf, "%d %d %d\n", t, v[0].adsr_level() >> 19, (int) (y - 2048));
