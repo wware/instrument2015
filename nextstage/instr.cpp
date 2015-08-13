@@ -44,7 +44,8 @@ int main(void)
 {
     FILE *outf, *gp_outf;
     int i, t;
-    int64_t x, y, max = (1L << 31);
+    int64_t x, max = (1L << 31);
+    int32_t y;
 
     setup();
 
@@ -64,10 +65,14 @@ int main(void)
         ASSERT(x > -max);
         ASSERT(x < max);
         compute_sample();
-        // y = (long long int) (((x >> (21 + NUM_VOICE_BITS)) + 0x800) & 0xFFF);
         y = get_12_bit_value();
-        fprintf(gp_outf, "%d %d %ld\n", t, v[0].adsr_level(), y);
-        fprintf(outf, "%ld,\n", y);
+
+        /* Numbers for Gnuplot */
+        fprintf(gp_outf, "%d %d %d\n", t, v[0].adsr_level() >> 19, (int) (y - 2048));
+
+        /* Numbers for AIFF file */
+        fprintf(outf, "%ld,\n", (long int) (y << 3));   // DO NOT GO TO 4
+
         if (t == SAMPLING_RATE / 2) {
             for (i = 0; i < NUM_VOICES; i++)
                 v[i].keydown(1);

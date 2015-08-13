@@ -2,35 +2,31 @@ import math
 import os
 import sys
 
-if sys.platform == 'linux2':
-    # Ubuntu
-    import wave
-    fname = "quux.wav"
-    player = "mplayer"
-else:
-    # Mac
-    import aifc as wave
-    fname = "quux.aiff"
-    player = "afplay"
 
-CMD = "g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo instr.cpp teensy/key.cpp teensy/voice.cpp"
+CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo "
+    "instr.cpp teensy/key.cpp teensy/voice.cpp")
 
 assert os.system(CMD) == 0
 assert os.system("./foo") == 0
 
 if 'gnuplot' in sys.argv[1:]:
-    os.system("echo \"plot 'foo.gp' using 1:3 with lines; pause 10\" | gnuplot")
+    os.system("echo \"set term png; set output 'output.png';"
+        " plot 'foo.gp' using 1:3 with lines, 'foo.gp' using 1:2 with lines\" | gnuplot")
     sys.exit(0)
+else:
+    assert sys.platform == 'darwin', 'Sound only works on the Mac'
+
+import aifc
 
 import foo
 S = foo.samples
 
 try:
-    os.unlink(fname)
+    os.unlink("quux.aiff")
 except:
     pass
 
-q = wave.open(fname, "wb")
+q = aifc.open("quux.aiff", "wb")
 q.setnchannels(1)
 q.setsampwidth(2)
 q.setframerate(foo.sampfreq)
@@ -44,4 +40,4 @@ def f(x):
 q.writeframes("".join(map(f, S)))
 q.close()
 
-os.system(player + " " + fname)
+os.system("afplay quux.aiff")

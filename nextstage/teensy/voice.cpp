@@ -22,8 +22,12 @@ void Voice::step(void) {
     else if (state == 0) {
         // release
         x = value;
-        value = (x * release) >> ADSR_BITS;
-        gap = (uint32_t) (BIGGER * ADSR_MAX - value);
+        if (value < (1 << (ADSR_BITS / 2 + 2)))
+            // for for a fixed-point bug where notes
+            // never really completely end
+            value = 0;
+        else
+            value = (x * release) >> ADSR_BITS;
     }
     phase += dphase;
 }

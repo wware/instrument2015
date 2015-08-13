@@ -47,10 +47,12 @@ public:
         return value;
     }
     void keydown(uint32_t down) {
-        if (down)
+        if (down) {
             state = 1;
-        else
+            gap = (uint32_t) (BIGGER * ADSR_MAX - value);
+        } else {
             state = 0;
+        }
     }
 	int32_t signed_output(void) {
 	    /*
