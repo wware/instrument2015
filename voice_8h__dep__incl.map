@@ -1,0 +1,8 @@
+<map id="nextstage/teensy/voice.h" name="nextstage/teensy/voice.h">
+<area shape="rect" id="node2" href="$teensy_8ino.html" title="nextstage/teensy/teensy.ino" alt="" coords="5,155,192,181"/>
+<area shape="rect" id="node4" href="$key_8h.html" title="nextstage/teensy/key.h" alt="" coords="223,80,381,107"/>
+<area shape="rect" id="node5" href="$stub_8cpp.html" title="nextstage/swig/stub.cpp" alt="" coords="413,155,576,181"/>
+<area shape="rect" id="node7" href="$voice_8cpp.html" title="nextstage/teensy/voice.cpp" alt="" coords="458,80,640,107"/>
+<area shape="rect" id="node3" href="$instr_8cpp.html" title="nextstage/instr.cpp" alt="" coords="32,229,165,256"/>
+<area shape="rect" id="node6" href="$key_8cpp.html" title="nextstage/teensy/key.cpp" alt="" coords="217,155,388,181"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="compute_sample" name="compute_sample">
+<area shape="rect" id="node2" href="$teensy_8ino.html#aef853009f2f5f3c20d4c1d8d8945cfad" title="get_12_bit_value" alt="" coords="176,5,296,32"/>
+<area shape="rect" id="node3" href="$classQueue.html#a45ffef929683b172ebe84de92382d4c6" title="Queue::write" alt="" coords="188,56,284,83"/>
+<area shape="rect" id="node4" href="$classQueue.html#a3788d83c6711426d7c2f33ed268d72bf" title="Queue::full" alt="" coords="344,56,429,83"/>
+</map>

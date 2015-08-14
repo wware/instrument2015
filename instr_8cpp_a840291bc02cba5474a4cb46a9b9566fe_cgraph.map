@@ -1,0 +1,13 @@
+<map id="main" name="main">
+<area shape="rect" id="node2" href="$teensy_8ino.html#a4fc01d736fe50cf5b977f755b675f11d" title="setup" alt="" coords="138,157,193,184"/>
+<area shape="rect" id="node4" href="$classQueue.html#af3d3a0e983e1d83b7fa551e470a4a93c" title="Queue::read" alt="" coords="461,157,555,184"/>
+<area shape="rect" id="node10" href="$teensy_8ino.html#a7ddb9cc352f0d883f17e11e67fb1d1a4" title="compute_sample" alt="" coords="105,360,226,387"/>
+<area shape="rect" id="node3" href="$teensy_8ino.html#a3ac98981aa3fa8b3464dd10584116865" title="timer_interrupt" alt="" coords="291,5,397,32"/>
+<area shape="rect" id="node5" href="$classVoice.html#a1d61be1a5b9b0bff1afc01aef7362f59" title="Voice::setwaveform" alt="" coords="275,56,413,83"/>
+<area shape="rect" id="node6" href="$classVoice.html#a90393c4f64185767a97de650e615f22d" title="Voice::setA" alt="" coords="299,107,389,133"/>
+<area shape="rect" id="node7" href="$classVoice.html#a6c5faae0cfe53f65bd570d9a3a0cbae7" title="Voice::setD" alt="" coords="299,157,389,184"/>
+<area shape="rect" id="node8" href="$classVoice.html#a2d8d5224913dd88f63d2fe2c17708418" title="Voice::setS" alt="" coords="299,208,389,235"/>
+<area shape="rect" id="node9" href="$classVoice.html#a19165ff1cc473912ebd5c5e792a3e84e" title="Voice::setR" alt="" coords="299,259,389,285"/>
+<area shape="rect" id="node11" href="$teensy_8ino.html#aef853009f2f5f3c20d4c1d8d8945cfad" title="get_12_bit_value" alt="" coords="284,360,404,387"/>
+<area shape="rect" id="node12" href="$classQueue.html#a45ffef929683b172ebe84de92382d4c6" title="Queue::write" alt="" coords="296,411,392,437"/>
+</map>

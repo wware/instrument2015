@@ -1,0 +1,6 @@
+<map id="Key::check" name="Key::check">
+<area shape="rect" id="node2" href="$key_8cpp.html#a8df2c4b858fbda5041b15f09996394e1" title="read_key" alt="" coords="167,5,241,32"/>
+<area shape="rect" id="node3" href="$classVoice.html#a477be619bde8ad6d6a379c0c5ac44ca6" title="Voice::adsr_state" alt="" coords="142,56,266,83"/>
+<area shape="rect" id="node4" href="$classVoice.html#ab4f84134f739fdcafb8377649b4b350d" title="Voice::setfreq" alt="" coords="153,107,255,133"/>
+<area shape="rect" id="node5" href="$classVoice.html#a56ae77584294f380fbc8d17d3617b7ac" title="Voice::keydown" alt="" coords="147,157,261,184"/>
+</map>
