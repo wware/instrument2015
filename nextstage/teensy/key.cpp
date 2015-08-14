@@ -1,43 +1,13 @@
 #include "common.h"
 #include "key.h"
 
+extern uint8_t read_key(uint32_t);
+
 static uint8_t next_voice_to_assign = 0;
 
-uint32_t Key::check_internals(void) {
-    uint32_t Y = 0;
-#if __ARDUINO
-    uint32_t i, j = id, chip;
-    digitalWrite(10, LOW);
-    j = id;
-    switch (id) {    // OOPS WIRING ERRORS
-        case 0:
-            j = 1;
-            break;
-        case 1:
-            j = 0;
-            break;
-    }
-    chip = j >> 3;
-    digitalWrite(4, (j >> 2) & 1);
-    digitalWrite(3, (j >> 1) & 1);
-    digitalWrite(2, (j >> 0) & 1);
-    digitalWrite(5, chip == 1);   // OOPS WIRING ERROR
-    digitalWrite(6, chip == 0);
-    digitalWrite(7, chip == 2);
-    digitalWrite(8, chip == 3);
-    digitalWrite(9, chip == 4);
-    Y = 0;
-    digitalWrite(10, HIGH);
-    // while (!digitalRead(11)) Y++;
-    while (!digitalReadFast(11)) Y++;
-    digitalWrite(10, LOW);
-#endif
-    return Y;
-}
-
 uint32_t Key::check(void) {
-    uint32_t i, j = id;
-    uint32_t Y = check_internals();
+    uint32_t i, j, found;
+    uint32_t Y = read_key(id);
     if (Y > THRESHOLD) {
         if (state) {
             count = 0;
@@ -49,7 +19,19 @@ uint32_t Key::check(void) {
                     state = 1;
                     count = 0;
 
-                    i = next_voice_to_assign;
+                    // Look for the least recently used voice whose state is zero.
+                    for (i = next_voice_to_assign, j = 0, found = 0;
+                         j < NUM_VOICES;
+                         j++, i = (i + 1) % NUM_VOICES) {
+                        if (v[i].adsr_state() == 0) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    // If none is found, just grab the least recently used voice.
+                    if (!found)
+                        i = next_voice_to_assign;
+
                     next_voice_to_assign = (i + 1) % NUM_VOICES;
 
                     // does some other key already have this voice? If so, remove

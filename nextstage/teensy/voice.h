@@ -40,10 +40,10 @@ public:
         release = (int32_t)(ADSR_MAX * exp(-DT / r));
     }
 
-    int adsr_state() {
+    uint32_t adsr_state() {
         return state;
     }
-    int adsr_level() {
+    uint32_t adsr_level() {
         return value;
     }
     void keydown(uint32_t down) {

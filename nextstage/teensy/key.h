@@ -4,9 +4,6 @@
 #include "voice.h"
 
 class Key {
-private:
-    uint32_t check_internals(void);
-
 public:
     uint32_t id, state, count;
     float pitch;

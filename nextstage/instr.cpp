@@ -68,7 +68,7 @@ int main(void)
         ASSERT(samples.read((uint32_t *) &y) == 0);
 
         /* Numbers for Gnuplot */
-        fprintf(gp_outf, "%d %d %d\n", t, v[0].adsr_level() >> 19, (int) (y - 2048));
+        fprintf(gp_outf, "%d %d %d\n", t, v[0].adsr_level() >> 22, (int) (y - 2048));
 
         /* Numbers for AIFF file */
         fprintf(outf, "%ld,\n", (long int) (y << 3));   // DO NOT GO TO 4

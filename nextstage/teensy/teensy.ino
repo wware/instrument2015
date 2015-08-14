@@ -68,7 +68,7 @@ uint32_t get_12_bit_value(void)
     int64_t x = 0;
     for (i = 0; i < NUM_VOICES; i++)
         x += v[i].output();
-    return ((x >> (17 + NUM_VOICE_BITS)) + 0x800) & 0xFFF;
+    return ((x >> (20 + NUM_VOICE_BITS)) + 0x800) & 0xFFF;
 }
 
 void timer_interrupt(void)
@@ -94,6 +94,38 @@ void timer_interrupt(void)
     }
 }
 
+uint8_t read_key(uint32_t id)
+{
+    uint32_t Y = 0;
+#if __ARDUINO
+    uint32_t j = id, chip;
+    digitalWrite(10, LOW);
+    j = id;
+    switch (id) {    // OOPS WIRING ERRORS
+        case 0:
+            j = 1;
+            break;
+        case 1:
+            j = 0;
+            break;
+    }
+    chip = j >> 3;
+    digitalWrite(4, (j >> 2) & 1);
+    digitalWrite(3, (j >> 1) & 1);
+    digitalWrite(2, (j >> 0) & 1);
+    digitalWrite(5, chip == 1);   // OOPS WIRING ERROR
+    digitalWrite(6, chip == 0);
+    digitalWrite(7, chip == 2);
+    digitalWrite(8, chip == 3);
+    digitalWrite(9, chip == 4);
+    Y = 0;
+    digitalWrite(10, HIGH);
+    while (!digitalReadFast(11)) Y++;
+    digitalWrite(10, LOW);
+#endif
+    return Y;
+}
+
 void compute_sample(void) {
     int i;
     static uint32_t x, again = 0;
@@ -103,7 +135,13 @@ void compute_sample(void) {
             v[i].step();
         x = get_12_bit_value();
     }
+#if __ARDUINO
+    cli();
+#endif
     again = samples.write(x);
+#if __ARDUINO
+    sei();
+#endif
 }
 
 void loop(void) {
@@ -111,6 +149,8 @@ void loop(void) {
 
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
+    for (i = 0; i < 512; i++)
+        compute_sample();
 
     // TODO reading soft pots
     // TODO mapping keys to reachable pitches
