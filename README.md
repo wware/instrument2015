@@ -13,6 +13,16 @@ Music synthesizers of that era were actually special-purpose [analog computers](
 
 Sound generation in the Tooba (and keyboard scanning and voice assignment) is done in [C++](https://github.com/wware/instrument2015/blob/master/nextstage/teensy/teensy.ino) running on a 32-bit ARM microcontroller.
 
+Status, plans, etc
+----
+
+The first PVC prototype, the one shown at Providence on Aug 8th 2015, did all sound generation in the interrupt handler. More recently, the interrupt handler only transfers audio samples from a queue to the microcontroller's on-chip 12-bit DAC, and sound generation occurs in the loop() function.
+
+* ADSR and other slow-moving things should perform real calculations at only around 50 Hz, not 40 or 50 kHz. In between calculations they should use linear interpolation. Four billion divided by 50K is 80K, so it’s fine to use 16 fraction bits to interpolate. This will significantly speed things up.
+* Never copy or move blocks of data. Move pointers instead. The persistence data for a voice should live in one place and never move.
+* The next step right now is to take the code in the Voice class and split it into VCO, VCA and ADSR classes. Then add a Noise class, a Summer class, and a VCF class. The audio outputs of all these should be 24-bit signed integers in the range from -0x80_0000 to 0x7F_FFFF. Use asserts to make sure they never go outside that range.
+* Set up a [monkey test framework](https://en.wikipedia.org/wiki/Monkey_test) that virtually pounds on the keyboard, and detects overflows, underruns, etc.
+
 Teensy 3.1 info
 ----
 
