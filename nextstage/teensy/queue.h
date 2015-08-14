@@ -3,23 +3,25 @@
 
 #include "common.h"
 
-/* This MUST be a power of 2 */
+/** This MUST be a power of 2 */
 #define BUFSIZE 1024
 
 /**
  * A queue containing unsigned 32-bit samples. WARNING: This class
  * provides NO protection against interrupts. That must be done by
- * the user, for example:
+ * the user:
  *
- *     void example_usage(void) {
- *         uint8_t r;
- *         uint32_t x;
- *         x = compute next audio sample;
- *         cli();
- *         r = queue.write(x);
- *         sei();
- *         handle case where r != 0;
- *     }
+ * ~~~
+ * void example_usage(void) {
+ *     uint8_t r;
+ *     uint32_t x;
+ *     x = next_audio_sample;
+ *     cli();
+ *     r = queue.write(x);
+ *     sei();
+ *     // handle case where r != 0
+ * }
+ * ~~~
  *
  * Internal implementation is a fixed-size circular buffer.
  */
