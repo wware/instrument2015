@@ -3,9 +3,26 @@
 
 #include "common.h"
 
-// make sure this is a power of 2
+/* This MUST be a power of 2 */
 #define BUFSIZE 1024
 
+/**
+ * A queue containing unsigned 32-bit samples. WARNING: This class
+ * provides NO protection against interrupts. That must be done by
+ * the user, for example:
+ *
+ *     void example_usage(void) {
+ *         uint8_t r;
+ *         uint32_t x;
+ *         x = compute next audio sample;
+ *         cli();
+ *         r = queue.write(x);
+ *         sei();
+ *         handle case where r != 0;
+ *     }
+ *
+ * Internal implementation is a fixed-size circular buffer.
+ */
 class Queue
 {
     int wpointer, rpointer;
@@ -23,8 +40,10 @@ public:
     Queue() {
         wpointer = rpointer = 0;
     }
-    /* If the queue is empty, this method returns 1. Otherwise it reads a sample
-     * and stores it in x and returns zero.
+    /**
+     * Read a sample from the queue.
+     * @param x a pointer to the variable to store the sample in
+     * @return 0 if read is successful, 1 if queue is empty.
      */
     uint8_t read(uint32_t *x) {
         if (empty()) return 1;
@@ -32,8 +51,10 @@ public:
         rpointer = (rpointer + 1) & (BUFSIZE - 1);
         return 0;
     }
-    /* If the queue is full, this method returns 1. Otherwise it writes a sample
-     * and returns zero.
+    /**
+     * Write a sample to the queue.
+     * @param x the sample to be written
+     * @return 0 if write is successful, 1 if queue is full.
      */
     uint8_t write(uint32_t x) {
         if (full()) return 1;
