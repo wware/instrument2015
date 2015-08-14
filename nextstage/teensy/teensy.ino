@@ -57,8 +57,6 @@ void setup() {
         keyboard[i]->id = i;
         keyboard[i]->pitch = 440.0 * pow(1.0594631, i - 9);
     }
-    // TODO the left-hand keyboard
-    // TODO read the softpots
 }
 
 
@@ -71,6 +69,11 @@ uint32_t get_12_bit_value(void)
     return ((x >> (20 + NUM_VOICE_BITS)) + 0x800) & 0xFFF;
 }
 
+/**
+ * The timer interrupt takes audio samples from the queue and feeds
+ * them to the 12-bit DAC. If there is a queue underrun, it turns on
+ * the LED briefly but visibly.
+ */
 void timer_interrupt(void)
 {
     static uint8_t led_time;
@@ -126,6 +129,12 @@ uint8_t read_key(uint32_t id)
     return Y;
 }
 
+/**
+ * Run the step function on each of the voices. Sum their outputs to
+ * get a 12-bit sample, and put the sample in the queue. If the queue
+ * is full, then hang onto the sample to try to enqueue it again next
+ * time.
+ */
 void compute_sample(void) {
     int i;
     static uint32_t x, again = 0;
@@ -144,6 +153,13 @@ void compute_sample(void) {
 #endif
 }
 
+/**
+ * Arduino loop function
+ * @todo Read soft pots
+ * @todo Read the left-hand keyboard
+ * @todo Create Pitch class
+ * @todo Map keys to reachable pitches
+ */
 void loop(void) {
     int i;
 
@@ -151,9 +167,4 @@ void loop(void) {
         keyboard[i]->check();
     for (i = 0; i < 512; i++)
         compute_sample();
-
-    // TODO reading soft pots
-    // TODO mapping keys to reachable pitches
-    // TODO assigning pitches to voices
-    // TODO tracking key up and key down events
 }
