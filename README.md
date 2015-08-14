@@ -22,6 +22,7 @@ The first PVC prototype, the one shown at Providence on Aug 8th 2015, did all so
 * Never copy or move blocks of data. Move pointers instead. The persistence data for a voice should live in one place and never move.
 * The next step right now is to take the code in the Voice class and split it into VCO, VCA and ADSR classes. Then add a Noise class, a Summer class, and a VCF class. The audio outputs of all these should be 24-bit signed integers in the range from -0x80_0000 to 0x7F_FFFF. Use asserts to make sure they never go outside that range.
 * Set up a [monkey test framework](https://en.wikipedia.org/wiki/Monkey_test) that virtually pounds on the keyboard, and detects overflows, underruns, etc.
+  * A [SWIG wrapper](http://swig.org/) will be very helpful with this.
 
 Teensy 3.1 info
 ----

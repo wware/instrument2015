@@ -1,6 +1,7 @@
 #ifndef KEY_H_INCLUDED
 #define KEY_H_INCLUDED 1
 
+#include "common.h"
 #include "voice.h"
 
 /**
