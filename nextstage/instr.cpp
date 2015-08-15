@@ -44,7 +44,6 @@ int main(void)
 {
     FILE *outf, *gp_outf;
     int i, t;
-    int64_t x, max = (1L << 31);
     int32_t y;
 
     setup();
@@ -55,23 +54,19 @@ int main(void)
     fprintf(outf, "sampfreq = %lf\n", (double) SAMPLING_RATE);
     fprintf(outf, "samples = [\n");
 
-    for (i = 0; i < NUM_VOICES; i++)
-        v[i].setfreq(200 + 0.2 * i);
+    v[0].setfreq(400);
+    v[1].setfreq(500);
+    v[2].setfreq(600);
 
     for (t = 0; t < 4 * SAMPLING_RATE; t++) {
-        x = 0;
-        for (i = 0; i < NUM_VOICES; i++)
-            x += v[i].output();
-        ASSERT(x > -max);
-        ASSERT(x < max);
         compute_sample();
         ASSERT(samples.read((uint32_t *) &y) == 0);
 
         /* Numbers for Gnuplot */
-        fprintf(gp_outf, "%d %d %d\n", t, v[0].adsr_level() >> 22, (int) (y - 2048));
+        fprintf(gp_outf, "%d %d %d\n", t, v[0].adsr.output() >> 23, (int) (y - 2048));
 
         /* Numbers for AIFF file */
-        fprintf(outf, "%ld,\n", (long int) (y << 3));   // DO NOT GO TO 4
+        fprintf(outf, "%ld,\n", (long int) (y << 5));
 
         if (t == SAMPLING_RATE / 2) {
             for (i = 0; i < NUM_VOICES; i++)

@@ -27,25 +27,22 @@ Then it computes the sample for the next time.
 #define SAMPLING_RATE   40000
 #define DT (1.0 / SAMPLING_RATE)
 
-#define ADSR_BITS   30
-#define ADSR_MAX (1 << ADSR_BITS)
-
 #define NUM_KEYS 16   // 17? 34? 40?
 #define NUM_VOICE_BITS 3
 #define NUM_VOICES (1 << NUM_VOICE_BITS)
 
-
-/* 1 / (1 - 1/e), because exponential */
-#define BIGGER 1.5819767
-
 // This is for a 330K resistor.
 #define THRESHOLD 12
 
-#define KEYDOWN_COUNT 12
+#define KEYDOWN_COUNT 5
 
 class Key;
 extern Key *keyboard[NUM_KEYS];
 class Voice;
 extern Voice v[NUM_VOICES];
+
+extern int32_t mult_signed(int32_t x, int32_t y);
+extern int32_t mult_unsigned(uint32_t x, uint32_t y);
+extern int32_t mult_unsigned_signed(uint32_t x, int32_t y);
 
 #endif     // COMMON_H_INCLUDED

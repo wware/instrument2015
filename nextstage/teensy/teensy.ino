@@ -44,13 +44,8 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 #endif
 
-    for (i = 0; i < NUM_VOICES; i++) {
-        v[i].setwaveform(1);
-        v[i].setA(0.05);
-        v[i].setD(0.1);
-        v[i].setS(0.4);
-        v[i].setR(0.3);
-    }
+    for (i = 0; i < NUM_VOICES; i++)
+        v[i].setfreq(6 + 2 * i);
 
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i] = new Key();
@@ -165,6 +160,6 @@ void loop(void) {
 
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
-    for (i = 0; i < 512; i++)
+    for (i = 0; i < 64; i++)
         compute_sample();
 }

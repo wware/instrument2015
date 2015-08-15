@@ -23,7 +23,7 @@ uint32_t Key::check(void) {
                     for (i = next_voice_to_assign, j = 0, found = 0;
                          j < NUM_VOICES;
                          j++, i = (i + 1) % NUM_VOICES) {
-                        if (v[i].adsr_state() == 0) {
+                        if (v[i].adsr.state() == 0) {
                             found = 1;
                             break;
                         }

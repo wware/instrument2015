@@ -3,11 +3,10 @@ import os
 import sys
 
 
-CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo "
-    "instr.cpp teensy/key.cpp teensy/voice.cpp")
+CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo instr.cpp teensy/common.cpp teensy/key.cpp")
 
-assert os.system(CMD) == 0
-assert os.system("./foo") == 0
+assert os.system(CMD) == 0, CMD
+assert os.system("./foo") == 0, "./foo"
 
 if 'gnuplot' in sys.argv[1:]:
     os.system("echo \"set term png; set output 'output.png';"
