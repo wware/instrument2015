@@ -19,9 +19,10 @@ Status, plans, etc
 The first PVC prototype, the one shown at Providence on Aug 8th 2015, did all sound generation in the interrupt handler. More recently, the interrupt handler only transfers audio samples from a queue to the microcontroller's on-chip 12-bit DAC, and sound generation occurs in the loop() function.
 
 * Doxygen stuff is now [online](http://wware.github.io/instrument2015/).
+* Removing sound generation from the interrupt handler and moving it into the main loop solved a LOT of problems, and now I can run the interrupt at 40 kHz. But I am still hearing some aliasing, so I'll need a lowpass filter after the DAC. Use this [rail-to-rail op amp](http://www.digikey.com/product-detail/en/LT1677CN8%23PBF/LT1677CN8%23PBF-ND/962980).
 * ADSR and other slow-moving things should perform real calculations at only around 50 Hz, not 40 or 50 kHz. In between calculations they should use linear interpolation. Four billion divided by 50K is 80K, so it’s fine to use 16 fraction bits to interpolate. This will significantly speed things up.
 * Never copy or move blocks of data. Move pointers instead. The persistence data for a voice should live in one place and never move.
-* The next step right now is to take the code in the Voice class and split it into VCO, VCA and ADSR classes. Then add a Noise class, a Summer class, and a VCF class. The audio outputs of all these should be 24-bit signed integers in the range from -0x80_0000 to 0x7F_FFFF. Use asserts to make sure they never go outside that range.
+* The next step right now is to take the code in the Voice class and split it into VCO, VCA and ADSR classes. Then add a Noise class, a Scaler class, a Summer class, and a VCF class. The audio outputs of all these should be 24-bit signed integers in the range from -0x80_0000 to 0x7F_FFFF. Use asserts to make sure they never go outside that range.
 * Set up a [monkey test framework](https://en.wikipedia.org/wiki/Monkey_test) that virtually pounds on the keyboard, and detects overflows, underruns, etc.
   * A [SWIG wrapper](http://swig.org/) will be very helpful with this.
 

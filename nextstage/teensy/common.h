@@ -24,7 +24,7 @@ Then it computes the sample for the next time.
 #define NULL   0
 #endif
 
-#define SAMPLING_RATE   20000
+#define SAMPLING_RATE   40000
 #define DT (1.0 / SAMPLING_RATE)
 
 #define ADSR_BITS   30
