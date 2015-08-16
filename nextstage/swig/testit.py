@@ -33,43 +33,45 @@ for i in range(1023):
 
 osc = instrument.Oscillator()
 osc.setfreq(2000.0)
+assert osc.get_phase() == 0
 osc.setwaveform(0)
-assert osc.output() == -0x80000000, hex(osc.output())  # ramp
+assert osc.output() == 0x0, hex(osc.output())  # ramp
 osc.setwaveform(1)
-assert osc.output() == -0x80000000, hex(osc.output())  # triangle
+assert osc.output() == 0x0, hex(osc.output())  # triangle
 osc.setwaveform(2)
-assert osc.output() == -0x80000000, hex(osc.output())  # square
+assert osc.output() == 0x0, hex(osc.output())  # square
 for i in range(4):
     osc.step()
+assert osc.get_phase() != 0
 osc.setwaveform(0)
-assert osc.output() == -0x4cccccc0, hex(osc.output())
+assert osc.output() == 0x33333340, hex(osc.output())
 osc.setwaveform(1)
-assert osc.output() == -0x19999980, hex(osc.output())
+assert osc.output() == 0x66666680, hex(osc.output())
 osc.setwaveform(2)
-assert osc.output() == -0x80000000, hex(osc.output())
+assert osc.output() == 0x7fffffff, hex(osc.output())
 for i in range(6):
     osc.step()
 osc.setwaveform(0)
-assert osc.output() == 0x20, hex(osc.output())
+assert osc.output() == -0x7fffffe0, hex(osc.output())
 osc.setwaveform(1)
-assert osc.output() == 0x7fffffbe, hex(osc.output())
+assert osc.output() == -0x41, hex(osc.output())
 osc.setwaveform(2)
-assert osc.output() == 0x7fffffff, hex(osc.output())
+assert osc.output() == -0x80000000, hex(osc.output())
 for i in range(9):
     osc.step()
 osc.setwaveform(0)
-assert osc.output() == 0x73333370, hex(osc.output())
+assert osc.output() == -0xccccc90, hex(osc.output())
 osc.setwaveform(1)
-assert osc.output() == -0x666666e2, hex(osc.output())
-osc.setwaveform(2)
-assert osc.output() == 0x7fffffff, hex(osc.output())
-osc.step()
-osc.setwaveform(0)
-assert osc.output() == -0x7fffffc0, hex(osc.output())
-osc.setwaveform(1)
-assert osc.output() == -0x7fffff80, hex(osc.output())
+assert osc.output() == -0x19999920, hex(osc.output())
 osc.setwaveform(2)
 assert osc.output() == -0x80000000, hex(osc.output())
+osc.step()
+osc.setwaveform(0)
+assert osc.output() == 0x40, hex(osc.output())
+osc.setwaveform(1)
+assert osc.output() == 0x80, hex(osc.output())
+osc.setwaveform(2)
+assert osc.output() == 0x7fffffff, hex(osc.output())
 
 adsr = instrument.ADSR()
 adsr.setA(0.01)

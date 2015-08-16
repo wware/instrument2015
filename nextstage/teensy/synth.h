@@ -5,6 +5,7 @@
 #include <math.h>
 
 #define UNIT   0x100000000LL
+#define UNIT_2 0x200000000LL
 
 /* 1 / (1 - 1/e), because exponential */
 #define BIGGER ((uint64_t) (1.5819767 * UNIT))
@@ -99,27 +100,37 @@ public:
     void step(void) {
         phase += dphase;
     }
+    uint32_t get_phase(void) {
+        return phase;
+    }
     int32_t output(void) {
-        int64_t x = 0;
+        int64_t x;
         switch (waveform) {
         default:
         case 0:
             // ramp
-            x = phase;
-            return x - 0x80000000;
+            if (phase < 0x80000000) {
+                return phase;
+            } else {
+                return phase - UNIT;
+            }
             break;
         case 1:
             // triangle
-            if (phase >= 0x80000000) {
-                x = ~phase;
+            x = ((uint64_t) phase) << 1;
+            if (phase < 0x40000000) {
+                return x;
+            } else if (phase < 0xC0000000) {
+                return UNIT - x - 1;
             } else {
-                x = phase;
+                return x - UNIT_2;
             }
-            return (x << 1) - 0x80000000;
             break;
         case 2:
             // square
-            if (phase >= 0x80000000) {
+            if (phase == 0) {
+                return 0;
+            } else if (phase < 0x80000000) {
                 return 0x7fffffff;
             } else {
                 return -0x80000000;
