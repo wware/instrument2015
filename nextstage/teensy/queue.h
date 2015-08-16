@@ -66,4 +66,4 @@ public:
     }
 };
 
-#endif
+#endif    // QUEUE_H_INCLUDED

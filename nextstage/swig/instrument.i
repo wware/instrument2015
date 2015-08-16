@@ -5,6 +5,7 @@
 #define SWIG_FILE_WITH_INIT
 #include "../teensy/key.h"
 #include "../teensy/queue.h"
+#include "../teensy/synth.h"
 #include "../teensy/voice.h"
 
 extern int32_t mult_signed(int32_t x, int32_t y);
@@ -28,4 +29,5 @@ extern int32_t mult_unsigned_signed(uint32_t x, int32_t y);
 
 %include "../teensy/key.h"
 %include "../teensy/queue.h"
+%include "../teensy/synth.h"
 %include "../teensy/voice.h"

@@ -2,6 +2,7 @@
 #include "voice.h"
 #include "key.h"
 #include "queue.h"
+#include "synth.h"
 
 Voice v[NUM_VOICES];
 Key *keyboard[NUM_KEYS];
