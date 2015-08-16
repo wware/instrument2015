@@ -7,8 +7,15 @@ class Voice {
 public:
     Oscillator osc1, osc2, osc3;
     ADSR adsr;
+#if USE_FILTER
+    Filter filt;
+    double _f;
+#endif
 
     Voice() {
+#if USE_FILTER
+        filt.setQ(3);
+#endif
         osc1.setwaveform(0);
         osc2.setwaveform(0);
         osc3.setwaveform(0);
@@ -18,12 +25,24 @@ public:
         adsr.setR(0.1);
     }
     void step(void) {
+#if USE_FILTER
+        filt.setF(_f * adsr.output());
+#endif
         osc1.step();
         osc2.step();
         osc3.step();
         adsr.step();
+#if USE_FILTER
+        int64_t x = osc1.output();
+        x += osc2.output();
+        x += osc3.output();
+        filt.step(x >> 2);
+#endif
     }
     void setfreq(float f) {
+#if USE_FILTER
+        _f = f;
+#endif
         osc1.setfreq(f);
         osc2.setfreq(f + 2);
         osc3.setfreq(f / 2);
@@ -32,10 +51,16 @@ public:
         adsr.keydown(down);
     }
     int32_t output(void) {
-        int64_t x = osc1.output();
+        int64_t x;
+#if USE_FILTER
+        x = filt.bandpass();
+#else
+        x = osc1.output();
         x += osc2.output();
         x += osc3.output();
-        return mult_unsigned_signed(adsr.output(), x >> 2);
+        x >>= 2;
+#endif
+        return mult_unsigned_signed(adsr.output(), x);
     }
 };
 

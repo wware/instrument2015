@@ -160,6 +160,6 @@ void loop(void) {
 
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
-    for (i = 0; i < 128; i++)
+    for (i = 0; i < 64; i++)
         compute_sample();
 }

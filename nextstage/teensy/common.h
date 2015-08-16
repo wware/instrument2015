@@ -24,11 +24,21 @@ Then it computes the sample for the next time.
 #define NULL   0
 #endif
 
+#define USE_FILTER 0
+
+#if USE_FILTER
+#define SAMPLING_RATE   20000
+#else
 #define SAMPLING_RATE   40000
+#endif
 #define DT (1.0 / SAMPLING_RATE)
 
 #define NUM_KEYS 16   // 17? 34? 40?
+#if USE_FILTER
+#define NUM_VOICE_BITS 2
+#else
 #define NUM_VOICE_BITS 3
+#endif
 #define NUM_VOICES (1 << NUM_VOICE_BITS)
 
 // This is for a 330K resistor.
@@ -41,6 +51,7 @@ extern Key *keyboard[NUM_KEYS];
 class Voice;
 extern Voice v[NUM_VOICES];
 
+extern int32_t clip(int64_t x);
 extern int32_t mult_signed(int32_t x, int32_t y);
 extern int32_t mult_unsigned(uint32_t x, uint32_t y);
 extern int32_t mult_unsigned_signed(uint32_t x, int32_t y);

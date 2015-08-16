@@ -82,8 +82,42 @@ public:
     }
 };
 
+class Filter {
+    int64_t integrator1, integrator2, u;
+    uint32_t w0dt, k;
+
+public:
+    Filter() {
+        integrator1 = integrator2 = u = 0;
+    }
+    void setF(float f) {
+        w0dt = 2 * 6.2831853 * f * DT;
+    }
+    void setQ(float q) {
+        float _k = 1.0 / q;
+        if (_k < 0.18) _k = 0.18;   // stability
+        k = UNIT * _k;
+    }
+    void step(int32_t x) {
+        u = x;
+        u -= (k * integrator1) >> 31;
+        u -= integrator2;
+        integrator2 += (w0dt * integrator1) >> 32;
+        integrator1 += (w0dt * u) >> 32;
+    }
+    int32_t highpass(void) {
+        return clip(u >> 1);
+    }
+    int32_t bandpass(void) {
+        return clip(integrator1 >> 1);
+    }
+    int32_t lowpass(void) {
+        return clip(integrator2 >> 1);
+    }
+};
+
 class Oscillator {
-    uint32_t phase, dphase, waveform;  // oscillator
+    uint32_t phase, dphase, waveform;
 
 public:
     Oscillator() {
