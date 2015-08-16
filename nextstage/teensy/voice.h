@@ -9,9 +9,9 @@ public:
     ADSR adsr;
 
     Voice() {
-        osc1.setwaveform(1);
-        osc2.setwaveform(1);
-        osc3.setwaveform(1);
+        osc1.setwaveform(0);
+        osc2.setwaveform(0);
+        osc3.setwaveform(0);
         adsr.setA(0.03);
         adsr.setD(0.3);
         adsr.setS(0.4);
@@ -26,7 +26,7 @@ public:
     void setfreq(float f) {
         osc1.setfreq(f);
         osc2.setfreq(f + 3);
-        osc3.setfreq(f - 5);
+        osc3.setfreq(f / 2 - 2);
     }
     void keydown(uint32_t down) {
         adsr.keydown(down);
