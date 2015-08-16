@@ -12,9 +12,9 @@ uint32_t Key::check(void) {
         if (state) {
             count = 0;
         } else {
-            if (count < KEYDOWN_COUNT) {
+            if (count < KEYDOWN_HYSTERESIS) {
                 count++;
-                if (count == KEYDOWN_COUNT) {
+                if (count == KEYDOWN_HYSTERESIS) {
                     // this is a keydown event
                     state = 1;
                     count = 0;
@@ -51,9 +51,9 @@ uint32_t Key::check(void) {
         if (!state) {
             count = 0;
         } else {
-            if (count < KEYDOWN_COUNT) {
+            if (count < KEYDOWN_HYSTERESIS) {
                 count++;
-                if (count == KEYDOWN_COUNT) {
+                if (count == KEYDOWN_HYSTERESIS) {
                     // this is a keyup event
                     state = 0;
                     count = 0;

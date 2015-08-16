@@ -58,7 +58,7 @@ int main(void)
     v[1].setfreq(500);
     v[2].setfreq(600);
 
-    for (t = 0; t < 4 * SAMPLING_RATE; t++) {
+    for (t = 0; t < 2 * SAMPLING_RATE; t++) {
         compute_sample();
         ASSERT(samples.read((uint32_t *) &y) == 0);
 

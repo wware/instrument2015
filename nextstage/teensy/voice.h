@@ -25,8 +25,8 @@ public:
     }
     void setfreq(float f) {
         osc1.setfreq(f);
-        osc2.setfreq(f + 3);
-        osc3.setfreq(f / 2 - 2);
+        osc2.setfreq(f + 2);
+        osc3.setfreq(f / 2);
     }
     void keydown(uint32_t down) {
         adsr.keydown(down);

@@ -34,7 +34,7 @@ Then it computes the sample for the next time.
 // This is for a 330K resistor.
 #define THRESHOLD 12
 
-#define KEYDOWN_COUNT 5
+#define KEYDOWN_HYSTERESIS 5
 
 class Key;
 extern Key *keyboard[NUM_KEYS];
