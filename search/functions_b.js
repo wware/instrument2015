@@ -1,13 +1,13 @@
 var searchData=
 [
-  ['seta',['setA',['../classVoice.html#a90393c4f64185767a97de650e615f22d',1,'Voice']]],
-  ['setd',['setD',['../classVoice.html#a6c5faae0cfe53f65bd570d9a3a0cbae7',1,'Voice']]],
-  ['setfreq',['setfreq',['../classVoice.html#ab4f84134f739fdcafb8377649b4b350d',1,'Voice']]],
-  ['setr',['setR',['../classVoice.html#a19165ff1cc473912ebd5c5e792a3e84e',1,'Voice']]],
-  ['sets',['setS',['../classVoice.html#a2d8d5224913dd88f63d2fe2c17708418',1,'Voice']]],
+  ['seta',['setA',['../classADSR.html#a7424e4788c39e4441e7a54d58d1b12ef',1,'ADSR']]],
+  ['setd',['setD',['../classADSR.html#a53d815a533060ae3741740696147a526',1,'ADSR']]],
+  ['setfreq',['setfreq',['../classOscillator.html#a14664fe2e737fd7a5051e35177822feb',1,'Oscillator::setfreq()'],['../classVoice.html#ab4f84134f739fdcafb8377649b4b350d',1,'Voice::setfreq()']]],
+  ['setr',['setR',['../classADSR.html#af25f31c097d0f2d1f3151bf940fc21cf',1,'ADSR']]],
+  ['sets',['setS',['../classADSR.html#acb5d3c583dac95ccc2044daaa4ef7832',1,'ADSR']]],
   ['setup',['setup',['../teensy_8ino.html#a4fc01d736fe50cf5b977f755b675f11d',1,'teensy.ino']]],
-  ['setwaveform',['setwaveform',['../classVoice.html#a1d61be1a5b9b0bff1afc01aef7362f59',1,'Voice']]],
-  ['signed_5foutput',['signed_output',['../classVoice.html#a475f052b8bd7229128c41d236ad66394',1,'Voice']]],
+  ['setwaveform',['setwaveform',['../classOscillator.html#ac18e81b9e5b171cbfb865c1e84cba09f',1,'Oscillator']]],
   ['size',['size',['../classQueue.html#aed477c4f0a5482c4344e8bc044ce7b8b',1,'Queue']]],
-  ['step',['step',['../classVoice.html#adf55551e923569606da778510c9e639e',1,'Voice']]]
+  ['state',['state',['../classADSR.html#a919b8713b2a440678a87ffa9d07dad30',1,'ADSR']]],
+  ['step',['step',['../classADSR.html#a1330f5b0cfb4cfbfb4dd31412a02e7a6',1,'ADSR::step()'],['../classOscillator.html#a1c81f8fff16ae6f7cd824a024ef08ee6',1,'Oscillator::step()'],['../classVoice.html#adf55551e923569606da778510c9e639e',1,'Voice::step()']]]
 ];

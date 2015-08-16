@@ -1,3 +1,5 @@
 <map id="Key" name="Key">
-<area shape="rect" id="node2" href="$classVoice.html" title="Voice" alt="" coords="5,5,59,32"/>
+<area shape="rect" id="node2" href="$classVoice.html" title="Voice" alt="" coords="62,119,116,144"/>
+<area shape="rect" id="node3" href="$classOscillator.html" title="Oscillator" alt="" coords="5,5,82,31"/>
+<area shape="rect" id="node4" href="$classADSR.html" title="ADSR" alt="" coords="107,5,165,31"/>
 </map>

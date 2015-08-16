@@ -1,5 +1,5 @@
 <map id="get_12_bit_value" name="get_12_bit_value">
-<area shape="rect" id="node2" href="$teensy_8ino.html#a7ddb9cc352f0d883f17e11e67fb1d1a4" title="compute_sample" alt="" coords="174,31,295,57"/>
-<area shape="rect" id="node3" href="$teensy_8ino.html#a0b33edabd7f1c4e4a0bf32c67269be2f" title="loop" alt="" coords="346,5,393,32"/>
-<area shape="rect" id="node4" href="$instr_8cpp.html#a840291bc02cba5474a4cb46a9b9566fe" title="main" alt="" coords="344,56,395,83"/>
+<area shape="rect" id="node2" href="$teensy_8ino.html#a7ddb9cc352f0d883f17e11e67fb1d1a4" title="compute_sample" alt="" coords="176,31,299,56"/>
+<area shape="rect" id="node3" href="$teensy_8ino.html#a0b33edabd7f1c4e4a0bf32c67269be2f" title="loop" alt="" coords="349,5,395,31"/>
+<area shape="rect" id="node4" href="$instr_8cpp.html#a840291bc02cba5474a4cb46a9b9566fe" title="main" alt="" coords="347,55,397,80"/>
 </map>

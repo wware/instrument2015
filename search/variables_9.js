@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['release',['release',['../classVoice.html#a2bb35fadb3fd5042791dc81af9c6f136',1,'Voice']]],
-  ['rpointer',['rpointer',['../classQueue.html#aa26c8a72090728789e60d83628276ede',1,'Queue']]]
+  ['phase',['phase',['../classOscillator.html#a308211183958ae3448cc644062076a86',1,'Oscillator']]],
+  ['pitch',['pitch',['../classKey.html#a8ce29e157f325f4435f107261b4219ae',1,'Key']]]
 ];

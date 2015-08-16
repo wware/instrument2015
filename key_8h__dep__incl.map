@@ -1,6 +1,6 @@
 <map id="nextstage/teensy/key.h" name="nextstage/teensy/key.h">
-<area shape="rect" id="node2" href="$teensy_8ino.html" title="nextstage/teensy/teensy.ino" alt="" coords="5,80,192,107"/>
-<area shape="rect" id="node4" href="$stub_8cpp.html" title="nextstage/swig/stub.cpp" alt="" coords="217,80,380,107"/>
-<area shape="rect" id="node5" href="$key_8cpp.html" title="nextstage/teensy/key.cpp" alt="" coords="405,80,576,107"/>
-<area shape="rect" id="node3" href="$instr_8cpp.html" title="nextstage/instr.cpp" alt="" coords="32,155,165,181"/>
+<area shape="rect" id="node2" href="$teensy_8ino.html" title="nextstage/teensy/teensy.ino" alt="" coords="5,79,191,104"/>
+<area shape="rect" id="node4" href="$stub_8cpp.html" title="nextstage/swig/stub.cpp" alt="" coords="215,79,379,104"/>
+<area shape="rect" id="node5" href="$key_8cpp.html" title="nextstage/teensy/key.cpp" alt="" coords="402,79,573,104"/>
+<area shape="rect" id="node3" href="$instr_8cpp.html" title="nextstage/instr.cpp" alt="" coords="32,152,164,177"/>
 </map>

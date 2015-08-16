@@ -1,5 +1,5 @@
 <map id="loop" name="loop">
-<area shape="rect" id="node2" href="$teensy_8ino.html#a7ddb9cc352f0d883f17e11e67fb1d1a4" title="compute_sample" alt="" coords="102,31,223,57"/>
-<area shape="rect" id="node3" href="$teensy_8ino.html#aef853009f2f5f3c20d4c1d8d8945cfad" title="get_12_bit_value" alt="" coords="272,5,392,32"/>
-<area shape="rect" id="node4" href="$classQueue.html#a45ffef929683b172ebe84de92382d4c6" title="Queue::write" alt="" coords="284,56,380,83"/>
+<area shape="rect" id="node2" href="$teensy_8ino.html#a7ddb9cc352f0d883f17e11e67fb1d1a4" title="compute_sample" alt="" coords="100,31,223,56"/>
+<area shape="rect" id="node3" href="$teensy_8ino.html#aef853009f2f5f3c20d4c1d8d8945cfad" title="get_12_bit_value" alt="" coords="271,5,394,31"/>
+<area shape="rect" id="node4" href="$classQueue.html#a45ffef929683b172ebe84de92382d4c6" title="Queue::write" alt="" coords="284,55,381,80"/>
 </map>

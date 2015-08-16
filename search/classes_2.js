@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['voice',['Voice',['../classVoice.html',1,'']]]
+  ['oscillator',['Oscillator',['../classOscillator.html',1,'']]]
 ];
