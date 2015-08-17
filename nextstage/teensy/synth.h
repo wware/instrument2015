@@ -4,81 +4,91 @@
 #include <stdio.h>
 #include <math.h>
 
-#define UNIT   0x100000000LL
-#define UNIT_2 0x200000000LL
+#define UNIT     0x100000000LL
+#define UNIT_2   0x200000000LL
+#define UNITSQ   (1.0f * UNIT * UNIT)
+#define GOAL     (0.95 * UNITSQ)
 
 /* 1 / (1 - 1/e), because exponential */
-#define BIGGER ((uint64_t) (1.5819767 * UNIT))
+#define BIGGER (1.5819767 * UNITSQ)
+
+#define RARE  500
 
 class ADSR {
-    uint32_t _state, _value;    // adsr
-    uint32_t attack, decay, sustain, release;
-    uint64_t gap;
+    uint64_t _value;
+    int64_t dvalue;
+    uint32_t count;
+    uint8_t _state;
+    float attack, decay, sustain, release;
 
 public:
     ADSR() {
-        _state = _value = 0;
+        _state = _value = dvalue = count = 0;
     }
     void setA(float a) {
         if (a < 0.01) a = 0.01;
-        // attack = (int32_t)(UNIT * exp(-DT / a));
-        // Switching to LINEAR attack
-        attack = (uint32_t) (DT * UNIT / a);
+        attack = a;
     }
     void setD(float d) {
         if (d < 0.01) d = 0.01;
-        decay = (uint32_t)(UNIT * exp(-DT / d));
+        decay = d;
     }
     void setS(float s) {
-        sustain = (uint32_t) (UNIT * s);
+        sustain = GOAL * s;
     }
     void setR(float r) {
         if (r < 0.01) r = 0.01;
-        release = (uint32_t)(UNIT * exp(-DT / r));
+        release = r;
     }
 
     uint32_t state() {
         return _state;
     }
     uint32_t output() {
-        return _value;
+        return _value >> 32;
     }
     void keydown(uint32_t down) {
         if (down) {
             _state = 1;
+            count = 0;
         } else {
             _state = 0;
         }
     }
-    void step(void) {
-        uint64_t x;
-        if (_state == 1) {
-            // attack
-            x = ((uint64_t) _value) + attack;
-            if (x >= UNIT) {
+    void rare_step(void) {
+        // Done rarely, so float arithmetic OK here
+        float next_value, h;
+        switch (_state) {
+        case 1:
+            h = exp(-RARE * DT / attack);
+            next_value = h * _value + (1.0 - h) * BIGGER;
+            ASSERT(next_value - _value < UNITSQ);
+            ASSERT(next_value - _value > -UNITSQ);
+            if (next_value > GOAL) {
                 _state = 2;
-                _value = UNIT - 1;
-                gap = _value - sustain;
-            } else {
-                _value = x;
+                next_value = GOAL;
             }
+            break;
+        case 2:
+            h = exp(-RARE * DT / decay);
+            next_value = h * _value + (1.0 - h) * sustain;
+            break;
+        default:
+        case 0:
+            h = exp(-RARE * DT / release);
+            next_value = h * _value;
+            if (next_value < 1)
+                next_value = 0;
+            break;
         }
-        else if (_state == 2) {
-            // decay
-            _value = gap + sustain;
-            x = gap;
-            gap = (x * decay) >> 32;
+        dvalue = 1. * (next_value - _value) / RARE;
+    }
+    void step(void) {
+        if (count == 0) {
+            rare_step();
         }
-        else if (_state == 0) {
-            // release
-            x = _value;
-            if (_value < (1 << 18))
-                // fix for a fixed-point bug where notes
-                // never really completely end
-                _value = 0;
-            else
-                _value = (x * release) >> 32;
-        }
+        count = (count + 1) % RARE;
+        _value += dvalue;
     }
 };
 
@@ -138,37 +148,29 @@ public:
         return phase;
     }
     int32_t output(void) {
-        int64_t x;
         switch (waveform) {
         default:
         case 0:
             // ramp
-            if (phase < 0x80000000) {
-                return phase;
-            } else {
-                return phase - UNIT;
-            }
-            break;
+            return (int32_t) phase;
         case 1:
             // triangle
-            x = ((uint64_t) phase) << 1;
-            if (phase < 0x40000000) {
-                return x;
-            } else if (phase < 0xC0000000) {
-                return UNIT - x - 1;
-            } else {
-                return x - UNIT_2;
+            switch (phase >> 30) {
+            case 0:
+                return (phase << 1) & 0x7fffffff;
+            case 1:
+                return ~(phase << 1) & 0x7fffffff;
+            case 2:
+                return ~(phase << 1) | 0x80000000;
+            default:
+                return (phase << 1) | 0x80000000;
             }
             break;
         case 2:
             // square
-            if (phase == 0) {
-                return 0;
-            } else if (phase < 0x80000000) {
-                return 0x7fffffff;
-            } else {
-                return -0x80000000;
-            }
+            if (phase == 0) return 0;
+            if (phase < 0x80000000) return 0x7fffffff;
+            return -0x80000000;
             break;
         }
     }

@@ -16,11 +16,11 @@ public:
 #if USE_FILTER
         filt.setQ(3);
 #endif
-        osc1.setwaveform(0);
-        osc2.setwaveform(0);
-        osc3.setwaveform(0);
+        osc1.setwaveform(1);
+        osc2.setwaveform(1);
+        osc3.setwaveform(1);
         adsr.setA(0.03);
-        adsr.setD(0.3);
+        adsr.setD(0.7);
         adsr.setS(0.4);
         adsr.setR(0.1);
     }

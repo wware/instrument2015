@@ -13,8 +13,6 @@ Then it computes the sample for the next time.
 #define HIGH 1
 #define LOW 0
 
-#define ASSERT(cond)    assertion(cond, #cond)
-
 #include "teensy/teensy.ino"
 
 #define _STEP  1.0594630943592953
@@ -31,14 +29,6 @@ Then it computes the sample for the next time.
 #define Bflat(oct)   ((int) ((1 << oct) * _A * _STEP))
 #define B(oct)       ((int) ((1 << oct) * _A * _STEP2))
 #define C(oct)       ((int) ((1 << oct) * _A * _STEP2 * _STEP))
-
-void assertion(int cond, const char *strcond)
-{
-    if (!cond) {
-        fprintf(stderr, "ASSERTION FAILED: %s\n", strcond);
-        exit(1);
-    }
-}
 
 int main(void)
 {

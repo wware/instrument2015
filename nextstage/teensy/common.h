@@ -16,10 +16,6 @@ Then it computes the sample for the next time.
 #define __ARDUINO 1
 #endif
 
-#ifndef ASSERT
-#define ASSERT(cond)    ((void*) 0)
-#endif
-
 #ifndef NULL
 #define NULL   0
 #endif
@@ -45,6 +41,9 @@ Then it computes the sample for the next time.
 #define THRESHOLD 12
 
 #define KEYDOWN_HYSTERESIS 5
+
+#define ASSERT(cond)    assertion(cond, #cond)
+extern void assertion(int cond, const char *strcond);
 
 class Key;
 extern Key *keyboard[NUM_KEYS];
