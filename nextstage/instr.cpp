@@ -59,11 +59,11 @@ int main(void)
         fprintf(outf, "%ld,\n", (long int) (y << 5));
 
         if (t == SAMPLING_RATE / 2) {
-            for (i = 0; i < NUM_VOICES; i++)
+            for (i = 0; i < 3; i++)
                 v[i].keydown(1);
         }
         if (t == SAMPLING_RATE) {
-            for (i = 0; i < NUM_VOICES; i++)
+            for (i = 0; i < 3; i++)
                 v[i].keydown(0);
         }
     }

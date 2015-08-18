@@ -109,20 +109,20 @@ public:
         k = UNIT * _k;
     }
     void step(int32_t x) {
-        u = x;
+        u = x >> 1;
         u -= (k * integrator1) >> 31;
         u -= integrator2;
         integrator2 += (w0dt * integrator1) >> 32;
         integrator1 += (w0dt * u) >> 32;
     }
     int32_t highpass(void) {
-        return clip(u >> 1);
+        return clip(u);
     }
     int32_t bandpass(void) {
-        return clip(integrator1 >> 1);
+        return clip(integrator1);
     }
     int32_t lowpass(void) {
-        return clip(integrator2 >> 1);
+        return clip(integrator2);
     }
 };
 
