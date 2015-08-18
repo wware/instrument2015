@@ -14,11 +14,11 @@ public:
 
     Voice() {
 #if USE_FILTER
-        filt.setQ(3);
+        filt.setQ(4);
 #endif
-        osc1.setwaveform(1);
-        osc2.setwaveform(1);
-        osc3.setwaveform(1);
+        osc1.setwaveform(0);
+        osc2.setwaveform(0);
+        osc3.setwaveform(0);
         adsr.setA(0.03);
         adsr.setD(0.7);
         adsr.setS(0.4);
@@ -34,9 +34,8 @@ public:
         adsr.step();
 #if USE_FILTER
         int64_t x = osc1.output();
-        x += osc2.output();
         x += osc3.output();
-        filt.step(x >> 2);
+        filt.step(x >> 1);
 #endif
     }
     void setfreq(float f) {
@@ -54,6 +53,8 @@ public:
         int64_t x;
 #if USE_FILTER
         x = filt.bandpass();
+        x += osc2.output();
+        x >>= 1;
 #else
         x = osc1.output();
         x += osc2.output();
