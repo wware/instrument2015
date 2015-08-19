@@ -4,9 +4,13 @@ import sys
 
 
 CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo instr.cpp teensy/common.cpp teensy/key.cpp")
-
 assert os.system(CMD) == 0, CMD
-assert os.system("./foo") == 0, "./foo"
+
+if 'valgrind' in sys.argv[1:]:
+    CMD = "valgrind --tool=callgrind --dump-instr=yes --collect-jumps=yes ./foo"
+else:
+    CMD = "./foo"
+assert os.system(CMD) == 0, CMD
 
 if 'gnuplot' in sys.argv[1:]:
     os.system("echo \"set term png; set output 'output.png';"
