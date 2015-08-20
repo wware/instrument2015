@@ -42,6 +42,7 @@ Then it computes the sample for the next time.
 extern void assertion(int cond, const char *strcond);
 
 #define MULDIV32(x, y)  ((((int64_t) x) * y) >> 32)
+#define ADDCLIP(x, y)   clip(((int64_t) x) + ((int64_t) y))
 
 extern float small_random();
 

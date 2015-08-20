@@ -114,12 +114,13 @@ public:
         // two_k should be 0.36*UNIT or larger
     }
     void step(int32_t x) {
-        u = x >> 2;
-        u -= MULDIV32(two_k, integrator1);
-        u -= integrator2;
+        int64_t y = x >> 2;
+        y -= MULDIV32(two_k, integrator1);
+        y -= integrator2;
         // u is in the range from -2**30 to +2**30
-        integrator2 += MULDIV32(w0dt, integrator1);
-        integrator1 += MULDIV32(w0dt, u);
+        integrator2 = ADDCLIP(integrator2, MULDIV32(w0dt, integrator1));
+        integrator1 = ADDCLIP(integrator1, MULDIV32(w0dt, u));
+        u = clip(y);
     }
     int32_t highpass(void) {
         return clip(u);
