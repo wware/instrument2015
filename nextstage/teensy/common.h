@@ -36,7 +36,7 @@ Then it computes the sample for the next time.
 // This is for a 330K resistor.
 #define THRESHOLD 12
 
-#define KEYDOWN_HYSTERESIS 5
+#define KEYDOWN_HYSTERESIS 10
 
 #define ASSERT(cond)    assertion(cond, #cond)
 extern void assertion(int cond, const char *strcond);

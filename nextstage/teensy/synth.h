@@ -96,22 +96,29 @@ public:
 
 class Filter {
     int32_t integrator1, integrator2, u;
-    uint32_t w0dt;
-    uint32_t two_k;
+    uint32_t w0dt, two_k, _f, _k;
+
+    void compute_two_k(void) {
+        // k needs to scale with frequeuncy
+        two_k = (UNIT_2 * _k * _f) >> 24;
+    }
 
 public:
     Filter() {
         integrator1 = integrator2 = u = 0;
     }
     void setF(uint32_t f) {
+        _f = f;
         w0dt = FMUL * f;
         // w0dt ranges from 0 to 0.358
+        compute_two_k();
     }
     void setQ(float q) {
-        float _k = 1.0 / q;
-        if (_k < 0.18) _k = 0.18;   // stability
-        two_k = (uint32_t) (2 * UNIT * _k);
-        // two_k should be 0.36*UNIT or larger
+        float _fk;
+        _fk = 1.0 / q;
+        if (_fk < 0.18) _fk = 0.18;   // stability
+        _k = _fk * (1 << 16);
+        compute_two_k();
     }
     void step(int32_t x) {
         int64_t y = x >> 2;
