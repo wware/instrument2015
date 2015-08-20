@@ -22,7 +22,7 @@ Then it computes the sample for the next time.
 
 #define USE_FILTER 1
 
-#define SAMPLING_RATE   40000
+#define SAMPLING_RATE   30000
 #define DT (1.0 / SAMPLING_RATE)
 
 #define NUM_KEYS 16   // 17? 34? 40?
