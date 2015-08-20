@@ -44,9 +44,6 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 #endif
 
-    for (i = 0; i < NUM_VOICES; i++)
-        v[i].setfreq(6 + 2 * i);
-
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i] = new Key();
         keyboard[i]->id = i;
