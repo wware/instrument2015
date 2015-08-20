@@ -2,8 +2,8 @@ import math
 import os
 import sys
 
-FILES = "instr.cpp teensy/common.cpp teensy/key.cpp teensy/synth.cpp"
-CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo " + FILES)
+FILES = "instr.cpp teensy/common.cpp teensy/synth.cpp"
+CMD = ("g++ -Wall -g -D__ASSERT -Iteensy -o foo " + FILES)
 assert os.system(CMD) == 0, CMD
 
 if 'valgrind' in sys.argv[1:]:
@@ -16,8 +16,6 @@ if 'gnuplot' in sys.argv[1:]:
     os.system("echo \"set term png; set output 'output.png';"
         " plot 'foo.gp' using 1:3 with lines, 'foo.gp' using 1:2 with lines\" | gnuplot")
     sys.exit(0)
-# else:
-#     assert sys.platform == 'darwin', 'Sound only works on the Mac'
 elif sys.platform == 'darwin':
     import aifc
     player = "afplay"

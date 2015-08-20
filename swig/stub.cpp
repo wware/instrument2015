@@ -2,7 +2,6 @@
 #include "common.h"
 #include "voice.h"
 #include "key.h"
-#include "queue.h"
 #include "synth.h"
 
 Voice v[NUM_VOICES];

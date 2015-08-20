@@ -4,39 +4,53 @@ samples. First it writes the previously computed sample to the serial DAC.
 Then it computes the sample for the next time.
 */
 
-#if ! defined(__ARDUINO)
-#define __ARDUINO 1
 #include <TimerOne.h>
-#endif
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <math.h>
 
 #include "common.h"
 #include "voice.h"
 #include "key.h"
-#include "queue.h"
 
-Voice v[NUM_VOICES];
 Key *keyboard[NUM_KEYS];
-Queue samples;
 
-void timer_interrupt(void);
+class ThreadSafeSynth : public Synth
+{
+    void write_sample(void) {
+        cli();
+        Synth::write_sample();
+        sei();
+    }
+};
 
-float small_random() {
-    return -2.0 + 0.01 *
-#if __ARDUINO
-    random(400);
-#else
-    (rand() % 400);
-#endif
+ThreadSafeSynth s;
+ISynth *synth = &s;
+
+/**
+ * The timer interrupt takes audio samples from the queue and feeds
+ * them to the 12-bit DAC. If there is a queue underrun, it turns on
+ * the LED briefly but visibly.
+ */
+void timer_interrupt(void)
+{
+    static uint8_t led_time;
+    uint32_t x;
+    if (s.get_sample(&x) == 0) {
+        analogWrite(A14, x);
+    } else {
+        led_time = 100;
+    }
+    if (led_time > 0) {
+        led_time--;
+        digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+        digitalWrite(LED_BUILTIN, LOW);
+    }
 }
+
 
 void setup() {
     int i;
-#if __ARDUINO
+    for (i = 0; i < NUM_VOICES; i++)
+        s.add(new Voice());
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(timer_interrupt);
@@ -52,58 +66,17 @@ void setup() {
     pinMode(8, OUTPUT);
     pinMode(9, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
-#endif
 
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i] = new Key();
         keyboard[i]->id = i;
-        keyboard[i]->pitch = 440.0 * pow(1.0594631, i - 9);
-    }
-}
-
-
-uint32_t get_12_bit_value(void)
-{
-    int i;
-    int64_t x = 0;
-    for (i = 0; i < NUM_VOICES; i++)
-        x += v[i].output();
-    x /= NUM_VOICES;
-    return ((x >> 20) + 0x800) & 0xFFF;
-}
-
-/**
- * The timer interrupt takes audio samples from the queue and feeds
- * them to the 12-bit DAC. If there is a queue underrun, it turns on
- * the LED briefly but visibly.
- */
-void timer_interrupt(void)
-{
-    static uint8_t led_time;
-    uint32_t x;
-    if (samples.read(&x) == 0) {
-#if __ARDUINO
-        analogWrite(A14, x);
-#endif
-    } else {
-        led_time = 100;
-    }
-    if (led_time > 0) {
-        led_time--;
-#if __ARDUINO
-        digitalWrite(LED_BUILTIN, HIGH);
-#endif
-    } else {
-#if __ARDUINO
-        digitalWrite(LED_BUILTIN, LOW);
-#endif
+        keyboard[i]->pitch = i;
     }
 }
 
 uint8_t read_key(uint32_t id)
 {
     uint32_t Y = 0;
-#if __ARDUINO
     uint32_t j = id, chip;
     digitalWrite(10, LOW);
     j = id;
@@ -128,32 +101,7 @@ uint8_t read_key(uint32_t id)
     digitalWrite(10, HIGH);
     while (!digitalReadFast(11)) Y++;
     digitalWrite(10, LOW);
-#endif
     return Y;
-}
-
-/**
- * Run the step function on each of the voices. Sum their outputs to
- * get a 12-bit sample, and put the sample in the queue. If the queue
- * is full, then hang onto the sample to try to enqueue it again next
- * time.
- */
-void compute_sample(void) {
-    int i;
-    static uint32_t x, again = 0;
-
-    if (!again) {
-        for (i = 0; i < NUM_VOICES; i++)
-            v[i].step();
-        x = get_12_bit_value();
-    }
-#if __ARDUINO
-    cli();
-#endif
-    again = samples.write(x);
-#if __ARDUINO
-    sei();
-#endif
 }
 
 /**
@@ -169,5 +117,5 @@ void loop(void) {
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
     for (i = 0; i < 64; i++)
-        compute_sample();
+        s.compute_sample();
 }

@@ -12,6 +12,108 @@
 #define FMUL  ((uint32_t) (2 * 6.2831853 * DT * UNIT))
 #define NOT_TOO_SMALL(x)    MAX(x, 0.01)
 
+float small_random() {
+    return -2.0 + 0.01 * (rand() % 400);
+}
+
+uint8_t Queue::read(uint32_t *x) {
+    if (empty()) return 1;
+    *x = buffer[rpointer];
+    rpointer = (rpointer + 1) & (BUFSIZE - 1);
+    return 0;
+}
+
+uint8_t Queue::write(uint32_t x) {
+    if (full()) return 1;
+    buffer[wpointer] = x;
+    wpointer = (wpointer + 1) & (BUFSIZE - 1);
+    return 0;
+}
+
+
+void Synth::keydown(int8_t pitch) {
+    IVoice *v = assignments[pitch + 50];
+    if (v != NULL) {
+        // we already have a voice for this pitch
+        if (!v->idle())
+            // it's already active, no keydown needed
+            return;
+    } else {
+        v = get_next_available_voice(pitch);
+        v->setfreq(261.6255653f * pow(1.059463094359f, pitch));
+    }
+    v->keydown();
+}
+
+void Synth::keyup(int8_t pitch) {
+    IVoice *v = assignments[pitch + 50];
+    if (v != NULL) {
+        v->keyup();
+    }
+}
+
+void Synth::compute_sample(void) {
+    if (!again) {
+        uint8_t i;
+        for(i = 0; i < num_voices; ++i){
+            voices[i]->step();
+        }
+        x = get_12_bit_value();
+    }
+    write_sample();
+}
+
+uint32_t Synth::get_12_bit_value(void)
+{
+    uint8_t i, n = 255 / num_voices;
+    int64_t x = 0;
+    for(i = 0; i < num_voices; ++i){
+        x += voices[i]->output();
+    }
+    x = (x * n) >> 8;
+    return ((x >> 20) + 0x800) & 0xFFF;
+}
+
+IVoice * Synth::get_next_available_voice(int8_t pitch) {
+    uint32_t i, j, found;
+    int32_t n;
+    IVoice *v;
+    // Look for the least recently used voice whose state is zero.
+    i = next_voice_to_assign;
+    for (j = 0, found = 0; j < num_voices; j++) {
+        if (voices[i]->idle()) {
+            found = 1;
+            break;
+        }
+        // wrap aropund
+        if (++i == num_voices) i = 0;
+    }
+    // If none is found, just grab the least recently used voice.
+    if (found)
+        v = voices[i];
+    else
+        v = voices[next_voice_to_assign];
+
+    next_voice_to_assign++;
+    if (next_voice_to_assign == num_voices) {
+        // wrap aropund
+        next_voice_to_assign = 0;
+    }
+
+    // does some other key already have this voice? If so, remove
+    // the voice from that other key
+    for (n = -50; n < 50; n++) {
+        IVoice *old_voice = assignments[n + 50];
+        if (pitch != n && old_voice == v) {
+            assignments[n + 50] = NULL;
+            break;
+        }
+    }
+    assignments[pitch + 50] = v;
+    return v;
+}
+
+
 void ADSR::rare_step(void) {
     // Done rarely, so float arithmetic OK here
     float next_value, h;
@@ -57,13 +159,13 @@ void ADSR::setR(float r) {
     release = NOT_TOO_SMALL(r);
 }
 
-void ADSR::keydown(uint32_t down) {
-    if (down) {
-        _state = 1;
-        count = 0;
-    } else {
-        _state = 0;
-    }
+void ADSR::keydown(void) {
+    _state = 1;
+    count = 0;
+}
+
+void ADSR::keyup(void) {
+    _state = 0;
 }
 
 void ADSR::step(void) {
@@ -125,10 +227,10 @@ void Filter::setQ(float q) {
 
 void Filter::step(int32_t x) {
     int64_t y = x >> 2;
-    y -= MULDIV32(two_k, integrator1);
+    y -= MULSHIFT32(two_k, integrator1);
     y -= integrator2;
     // u is in the range from -2**30 to +2**30
-    integrator2 = ADDCLIP(integrator2, MULDIV32(w0dt, integrator1));
-    integrator1 = ADDCLIP(integrator1, MULDIV32(w0dt, u));
+    integrator2 = ADDCLIP(integrator2, MULSHIFT32(w0dt, integrator1));
+    integrator1 = ADDCLIP(integrator1, MULSHIFT32(w0dt, u));
     u = clip(y);
 }

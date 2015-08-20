@@ -1,5 +1,5 @@
 #include "common.h"
-#if !__ARDUINO
+#ifdef __ASSERT
 #include <stdio.h>
 #include <stdlib.h>
 #endif
@@ -22,7 +22,7 @@ int32_t mult_unsigned_signed(uint32_t x, int32_t y)
 void assertion(int cond, const char *strcond,
                const char *file, const int line)
 {
-#if !__ARDUINO
+#ifdef __ASSERT
     if (!cond) {
         fprintf(stderr,
                 "%s(%d) ASSERTION FAILED: %s\n",

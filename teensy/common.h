@@ -7,34 +7,17 @@ Then it computes the sample for the next time.
 #ifndef COMMON_H_INCLUDED
 #define COMMON_H_INCLUDED 1
 
-#ifndef __STDINT
 #include <stdint.h>
-#define __STDINT 1
-#endif
 
-#ifndef __ARDUINO
-#define __ARDUINO 1
-#endif
-
-#ifndef NULL
-#define NULL   0
-#endif
-
-#define USE_FILTER 1
-
-#define SAMPLING_RATE   30000
+#define SAMPLING_RATE   40000
 #define DT (1.0 / SAMPLING_RATE)
 
 #define NUM_KEYS 16   // 17? 34? 40?
 
-#if USE_FILTER
-#define NUM_VOICES 4
-#else
-#define NUM_VOICES 8
-#endif
+#define NUM_VOICES 3
 
 // This is for a 330K resistor.
-#define THRESHOLD 12
+#define THRESHOLD 10
 
 #define KEYDOWN_HYSTERESIS 10
 
@@ -45,15 +28,10 @@ extern void assertion(int cond, const char *strcond,
 #define MIN(x, y)   (((x) < (y)) ? (x) : (y))
 #define MAX(x, y)   (((x) > (y)) ? (x) : (y))
 
-#define MULDIV32(x, y)  ((((int64_t) x) * y) >> 32)
+#define MULSHIFT32(x, y)  ((((int64_t) x) * y) >> 32)
 #define ADDCLIP(x, y)   clip(((int64_t) x) + ((int64_t) y))
 
 extern float small_random();
-
-class Key;
-extern Key *keyboard[NUM_KEYS];
-class Voice;
-extern Voice v[NUM_VOICES];
 
 inline int32_t clip(int64_t x) {
     return MAX(-0x80000000LL, MIN(0x7fffffffLL, x));
