@@ -22,11 +22,7 @@ Then it computes the sample for the next time.
 
 #define USE_FILTER 1
 
-#if USE_FILTER
-#define SAMPLING_RATE   20000
-#else
 #define SAMPLING_RATE   40000
-#endif
 #define DT (1.0 / SAMPLING_RATE)
 
 #define NUM_KEYS 16   // 17? 34? 40?
@@ -46,6 +42,8 @@ Then it computes the sample for the next time.
 extern void assertion(int cond, const char *strcond);
 
 #define MULDIV32(x, y)  ((((int64_t) x) * y) >> 32)
+
+extern float small_random();
 
 class Key;
 extern Key *keyboard[NUM_KEYS];

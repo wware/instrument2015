@@ -9,6 +9,7 @@ Then it computes the sample for the next time.
 #include <TimerOne.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
@@ -23,6 +24,15 @@ Key *keyboard[NUM_KEYS];
 Queue samples;
 
 void timer_interrupt(void);
+
+float small_random() {
+    return -2.0 + 0.01 *
+#if __ARDUINO
+    random(400);
+#else
+    (rand() % 400);
+#endif
+}
 
 void setup() {
     int i;
