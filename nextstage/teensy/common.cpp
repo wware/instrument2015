@@ -25,11 +25,14 @@ int32_t mult_unsigned_signed(uint32_t x, int32_t y)
     return (((uint64_t) x) * y) >> 32;
 }
 
-void assertion(int cond, const char *strcond)
+void assertion(int cond, const char *strcond,
+               const char *file, const int line)
 {
 #if !__ARDUINO
     if (!cond) {
-        fprintf(stderr, "ASSERTION FAILED: %s\n", strcond);
+        fprintf(stderr,
+                "%s(%d) ASSERTION FAILED: %s\n",
+                file, line, strcond);
         exit(1);
     }
 #endif

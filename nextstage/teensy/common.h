@@ -38,8 +38,9 @@ Then it computes the sample for the next time.
 
 #define KEYDOWN_HYSTERESIS 10
 
-#define ASSERT(cond)    assertion(cond, #cond)
-extern void assertion(int cond, const char *strcond);
+#define ASSERT(cond)    assertion(cond, #cond, __FILE__, __LINE__)
+extern void assertion(int cond, const char *strcond,
+					  const char *file, const int line);
 
 #define MULDIV32(x, y)  ((((int64_t) x) * y) >> 32)
 #define ADDCLIP(x, y)   clip(((int64_t) x) + ((int64_t) y))

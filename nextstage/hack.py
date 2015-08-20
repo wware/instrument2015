@@ -16,31 +16,42 @@ if 'gnuplot' in sys.argv[1:]:
     os.system("echo \"set term png; set output 'output.png';"
         " plot 'foo.gp' using 1:3 with lines, 'foo.gp' using 1:2 with lines\" | gnuplot")
     sys.exit(0)
-else:
-    assert sys.platform == 'darwin', 'Sound only works on the Mac'
+# else:
+#     assert sys.platform == 'darwin', 'Sound only works on the Mac'
+elif sys.platform == 'darwin':
+    import aifc
+    player = "afplay"
+    fname = "quux.aiff"
 
-import aifc
+    def f(x):
+        xhi = (x >> 8) & 0xff
+        xlo = x & 0xff
+        return chr(xhi) + chr(xlo)
+else:
+    import wave as aifc
+    player = "audacious"
+    fname = "quux.wav"
+
+    def f(x):
+        xhi = (x >> 8) & 0xff
+        xlo = x & 0xff
+        return chr(xlo) + chr(xhi)
 
 import foo
 S = foo.samples
 
 try:
-    os.unlink("quux.aiff")
+    os.unlink(fname)
 except:
     pass
 
-q = aifc.open("quux.aiff", "wb")
+q = aifc.open(fname, "wb")
 q.setnchannels(1)
 q.setsampwidth(2)
 q.setframerate(foo.sampfreq)
 q.setnframes(len(S))
 
-def f(x):
-    xhi = (x >> 8) & 0xff
-    xlo = x & 0xff
-    return chr(xhi) + chr(xlo)
-
 q.writeframes("".join(map(f, S)))
 q.close()
 
-os.system("afplay quux.aiff")
+os.system(player + " " + fname)
