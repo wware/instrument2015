@@ -45,6 +45,8 @@ Then it computes the sample for the next time.
 #define ASSERT(cond)    assertion(cond, #cond)
 extern void assertion(int cond, const char *strcond);
 
+#define MULDIV32(x, y)  ((((int64_t) x) * y) >> 32)
+
 class Key;
 extern Key *keyboard[NUM_KEYS];
 class Voice;

@@ -92,41 +92,34 @@ public:
     }
 };
 
-extern float umin, umax;
+#define FMUL  ((uint32_t) (2 * 6.2831853 * DT * UNIT))
 
 class Filter {
-    float integrator1, integrator2, u;
-    float w0dt, k;
+    int32_t integrator1, integrator2, u;
+    uint32_t w0dt;
+    uint32_t two_k;
 
 public:
     Filter() {
         integrator1 = integrator2 = u = 0;
     }
-    void setF(float f) {
-        w0dt = 2 * 6.2831853 * f * DT;
-        fprintf(stderr, "w0dt = %f\n", w0dt);
+    void setF(uint32_t f) {
+        w0dt = FMUL * f;
         // w0dt ranges from 0 to 0.358
     }
     void setQ(float q) {
         float _k = 1.0 / q;
         if (_k < 0.18) _k = 0.18;   // stability
-        k = UNIT * _k;
-        // k should be 0.4 or larger
-        // or if we double it, it should be 0.2 or larger
+        two_k = (uint32_t) (2 * UNIT * _k);
+        // two_k should be 0.36*UNIT or larger
     }
     void step(int32_t x) {
         u = x >> 2;
-        // u -= (k * integrator1) >> 31;
-        u -= 0.36 * integrator1;
+        u -= MULDIV32(two_k, integrator1);
         u -= integrator2;
         // u is in the range from -2**30 to +2**30
-        if (u < umin) umin = u;
-        if (u > umax) umax = u;
-        fprintf(stderr, "umin=%f umax=%f\n", umin, umax);
-        // integrator2 += (w0dt * integrator1) >> 32;
-        // integrator1 += (w0dt * u) >> 32;
-        integrator2 += w0dt * integrator1;
-        integrator1 += w0dt * u;
+        integrator2 += MULDIV32(w0dt, integrator1);
+        integrator1 += MULDIV32(w0dt, u);
     }
     int32_t highpass(void) {
         return clip(u);

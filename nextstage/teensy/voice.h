@@ -9,7 +9,7 @@ public:
     ADSR adsr;
 #if USE_FILTER
     Filter filt;
-    double _f;
+    uint32_t _f;
 #endif
 
     Voice() {
@@ -30,7 +30,8 @@ public:
         osc3.step();
         adsr.step();
 #if USE_FILTER
-        filt.setF(_f * adsr.output() / (1UL << 32));
+        // filt.setF(_f * adsr.output() / (1UL << 32));
+        filt.setF(MULDIV32(_f, adsr.output()));
         int64_t x = osc1.output();
         x += osc2.output();
         x += osc3.output();
