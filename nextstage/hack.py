@@ -2,8 +2,8 @@ import math
 import os
 import sys
 
-
-CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo instr.cpp teensy/common.cpp teensy/key.cpp")
+FILES = "instr.cpp teensy/common.cpp teensy/key.cpp teensy/synth.cpp"
+CMD = ("g++ -Wall -g -D__ARDUINO=0 -Iteensy -o foo " + FILES)
 assert os.system(CMD) == 0, CMD
 
 if 'valgrind' in sys.argv[1:]:

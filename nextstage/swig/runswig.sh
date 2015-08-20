@@ -16,7 +16,7 @@ then
 fi
 
 swig ${DEBUG} -c++ -python instrument.i || exit 1
-g++ -fPIC -c stub.cpp ../teensy/common.cpp ../teensy/key.cpp instrument_wrap.cxx \
+g++ -fPIC -c stub.cpp ../teensy/common.cpp ../teensy/key.cpp ../teensy/synth.cpp instrument_wrap.cxx \
     -I/usr/include/python2.7 \
     -I/System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/Python.h \
     -I../teensy || exit 1
@@ -30,7 +30,7 @@ else
     OPTS="-shared"
 fi
 
-g++ ${OPTS} stub.o key.o common.o instrument_wrap.o -o _instrument.so || exit 1
+g++ ${OPTS} stub.o key.o synth.o common.o instrument_wrap.o -o _instrument.so || exit 1
 
 python testit.py || exit 1
 

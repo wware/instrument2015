@@ -42,6 +42,9 @@ Then it computes the sample for the next time.
 extern void assertion(int cond, const char *strcond,
 					  const char *file, const int line);
 
+#define MIN(x, y)   (((x) < (y)) ? (x) : (y))
+#define MAX(x, y)   (((x) > (y)) ? (x) : (y))
+
 #define MULDIV32(x, y)  ((((int64_t) x) * y) >> 32)
 #define ADDCLIP(x, y)   clip(((int64_t) x) + ((int64_t) y))
 
@@ -52,7 +55,10 @@ extern Key *keyboard[NUM_KEYS];
 class Voice;
 extern Voice v[NUM_VOICES];
 
-extern int32_t clip(int64_t x);
+inline int32_t clip(int64_t x) {
+    return MAX(-0x80000000LL, MIN(0x7fffffffLL, x));
+}
+
 extern int32_t mult_signed(int32_t x, int32_t y);
 extern int32_t mult_unsigned(uint32_t x, uint32_t y);
 extern int32_t mult_unsigned_signed(uint32_t x, int32_t y);
