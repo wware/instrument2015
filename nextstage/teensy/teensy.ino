@@ -68,7 +68,8 @@ uint32_t get_12_bit_value(void)
     int64_t x = 0;
     for (i = 0; i < NUM_VOICES; i++)
         x += v[i].output();
-    return ((x >> (20 + NUM_VOICE_BITS)) + 0x800) & 0xFFF;
+    x /= NUM_VOICES;
+    return ((x >> 20) + 0x800) & 0xFFF;
 }
 
 /**
