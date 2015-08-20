@@ -25,15 +25,14 @@ public:
         adsr.setR(0.1);
     }
     void step(void) {
-#if USE_FILTER
-        filt.setF(_f * adsr.output());
-#endif
         osc1.step();
         osc2.step();
         osc3.step();
         adsr.step();
 #if USE_FILTER
+        filt.setF(_f * adsr.output() / (1UL << 32));
         int64_t x = osc1.output();
+        x += osc2.output();
         x += osc3.output();
         filt.step(x >> 1);
 #endif
@@ -53,8 +52,6 @@ public:
         int64_t x;
 #if USE_FILTER
         x = filt.bandpass();
-        x += osc2.output();
-        x >>= 1;
 #else
         x = osc1.output();
         x += osc2.output();

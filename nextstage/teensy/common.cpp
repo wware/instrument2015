@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #endif
 
+float umin=0.0f, umax=0.0f;
+
 int32_t clip(int64_t x) {
     if (x > 0x7fffffffLL) x = 0x7fffffffLL;
     if (x < -0x80000000LL) x = -0x80000000LL;

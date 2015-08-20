@@ -20,7 +20,7 @@ Then it computes the sample for the next time.
 #define NULL   0
 #endif
 
-#define USE_FILTER 0
+#define USE_FILTER 1
 
 #if USE_FILTER
 #define SAMPLING_RATE   20000
