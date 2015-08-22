@@ -2,16 +2,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "teensy/synth.h"
 #include "teensy/voice.h"
 
 FILE *outf, *gp_outf;
 int t;
+float _time;
 Synth s;
 
 int main(void)
 {
-    gp_outf = fopen("foo.gp", "w");
-
+    use_synth(&s);
     outf = fopen("foo.py", "w");
     fprintf(outf, "sampfreq = %lf\n", (double) SAMPLING_RATE);
     fprintf(outf, "samples = [\n");
@@ -21,11 +22,11 @@ int main(void)
 
     for (t = 0; t < 3 * SAMPLING_RATE; t++) {
         int32_t y;
+        _time = t * DT;
         s.compute_sample();
         ASSERT(s.get_sample((uint32_t *) &y) == 0);
 
-        // why the left shift? why 5 and not 4 or 6?
-        fprintf(outf, "%ld,\n", (long int) y << 5);
+        fprintf(outf, "%u,\n", (uint16_t) (y << 6));
 
         if (t == SAMPLING_RATE / 2) {
             s.keydown(0);
@@ -47,5 +48,4 @@ int main(void)
 
     fprintf(outf, "]\n");
     fclose(outf);
-    fclose(gp_outf);
 }

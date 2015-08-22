@@ -2,8 +2,8 @@ import math
 import os
 import sys
 
-FILES = "instr.cpp teensy/common.cpp teensy/synth.cpp"
-CMD = ("g++ -Wall -g -D__ASSERT -Iteensy -o foo " + FILES)
+# Set __ARM = 0 so later it will be possible to disable assembly language.
+CMD = ("g++ -Wall -g -D__ARM=0 -Iteensy -o foo test.cpp teensy/synth.cpp")
 assert os.system(CMD) == 0, CMD
 
 if 'valgrind' in sys.argv[1:]:
@@ -16,24 +16,20 @@ if 'gnuplot' in sys.argv[1:]:
     os.system("echo \"set term png; set output 'output.png';"
         " plot 'foo.gp' using 1:3 with lines, 'foo.gp' using 1:2 with lines\" | gnuplot")
     sys.exit(0)
-elif sys.platform == 'darwin':
-    import aifc
+
+import aifc
+fname = "quux.aiff"
+
+if sys.platform == "darwin":
     player = "afplay"
-    fname = "quux.aiff"
-
-    def f(x):
-        xhi = (x >> 8) & 0xff
-        xlo = x & 0xff
-        return chr(xhi) + chr(xlo)
 else:
-    import wave as aifc
-    player = "audacious"
-    fname = "quux.wav"
+    assert sys.platform == "linux2"
+    player = "play"   # apt-get install sox
 
-    def f(x):
-        xhi = (x >> 8) & 0xff
-        xlo = x & 0xff
-        return chr(xlo) + chr(xhi)
+def f(x):
+    xhi = (x >> 8) & 0xff
+    xlo = x & 0xff
+    return chr(xhi) + chr(xlo)
 
 import foo
 S = foo.samples

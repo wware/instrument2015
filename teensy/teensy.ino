@@ -1,13 +1,11 @@
 #include <TimerOne.h>
 
-#include "common.h"
+#include "synth.h"
 #include "voice.h"
-#include "key.h"
 
 #define NUM_KEYS 10   // 17? 34? 40?
 #define NUM_VOICES 3
 
-Key *keyboard[NUM_KEYS];
 
 class ThreadSafeSynth : public Synth
 {
@@ -18,8 +16,10 @@ class ThreadSafeSynth : public Synth
     }
 };
 
+Key *keyboard[NUM_KEYS];
 ThreadSafeSynth s, s2;
-ISynth *synth;
+
+int8_t pitches[] = { 0, 2, 4, 5, 7, 9, 11, 12 };
 
 /**
  * The timer interrupt takes audio samples from the queue and feeds
@@ -30,7 +30,7 @@ void timer_interrupt(void)
 {
     static uint8_t led_time;
     uint32_t x;
-    if (synth->get_sample(&x) == 0) {
+    if (get_synth()->get_sample(&x) == 0) {
         analogWrite(A14, x);
     } else {
         led_time = 100;
@@ -43,8 +43,28 @@ void timer_interrupt(void)
     }
 }
 
-int8_t _pitches[] = { 0, 2, 4, 5, 7, 9, 11, 12 };
-int8_t *pitches = (int8_t*) &_pitches;
+uint8_t read_key(uint32_t id)
+{
+    if (digitalReadFast(id) == LOW) {
+        switch (id) {
+            case 8:
+                cli();
+                use_synth(&s);
+                sei();
+                return 0;
+                break;
+            case 9:
+                cli();
+                use_synth(&s2);
+                sei();
+                return 0;
+                break;
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 void setup() {
     uint8_t i;
@@ -52,7 +72,8 @@ void setup() {
         s.add(new NoisyVoice());
     for (i = 0; i < NUM_VOICES; i++)
         s2.add(new SimpleVoice());
-    synth = &s;
+    use_synth(&s);
+    use_read_key(&read_key);
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(timer_interrupt);
@@ -71,34 +92,7 @@ void setup() {
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i] = new Key();
         keyboard[i]->id = i;
-        keyboard[i]->pitch = pitches[i];
-    }
-}
-
-uint8_t read_key(uint32_t id)
-{
-    if (digitalReadFast(id) == LOW) {
-        switch (id) {
-            case 8:
-                s.quiet();
-                s2.quiet();
-                cli();
-                synth = &s;
-                sei();
-                return 0;
-                break;
-            case 9:
-                s.quiet();
-                s2.quiet();
-                cli();
-                synth = &s2;
-                sei();
-                return 0;
-                break;
-        }
-        return 1;
-    } else {
-        return 0;
+        keyboard[i]->pitch = ((int8_t*) &pitches)[i];
     }
 }
 
@@ -110,5 +104,5 @@ void loop(void) {
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
     for (i = 0; i < 64; i++)
-        synth->compute_sample();
+        get_synth()->compute_sample();
 }

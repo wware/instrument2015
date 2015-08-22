@@ -3,7 +3,27 @@
 
 #include <stdlib.h>
 
-#include "common.h"
+#ifndef __ARM
+#define __ARM 1
+#endif
+
+
+#include <stdint.h>
+
+#define SAMPLING_RATE   40000
+#define DT (1.0 / SAMPLING_RATE)
+
+#define ASSERT(cond)    assertion(cond, #cond, __FILE__, __LINE__)
+extern void assertion(int cond, const char *strcond,
+                      const char *file, const int line);
+
+extern float small_random();
+extern int32_t mult_signed(int32_t x, int32_t y);
+extern int32_t mult_unsigned(uint32_t x, uint32_t y);
+extern int32_t mult_unsigned_signed(uint32_t x, int32_t y);
+
+/** Buffer for the Queue class. This MUST be a power of 2. */
+#define BUFSIZE 1024
 
 // Used a lot for fixed-point arithmetic.
 #define UNIT     0x100000000LL
@@ -42,8 +62,9 @@ public:
     virtual void compute_sample(void) = 0;
 };
 
-/** Buffer for the Queue class. This MUST be a power of 2. */
-#define BUFSIZE 1024
+extern void use_read_key(uint8_t (*rk)(uint32_t));
+extern void use_synth(ISynth *s);
+extern ISynth * get_synth(void);
 
 /**
  * A queue containing unsigned 32-bit samples. WARNING: This class
@@ -223,6 +244,43 @@ public:
         return phase;
     }
     int32_t output(void);
+};
+
+/**
+ * Representation of a key on the keyboard. Handles keyboard scanning
+ * and issuing keydown/keyup events to an ISynth instance.
+ */
+class Key {
+public:
+    /**
+     * A numerical index of this key, used to identify it for keyboard scanning.
+     */
+    uint32_t id;
+    /**
+     * 1 if the key is pressed/touched, 0 otherwise.
+     */
+    uint32_t state;
+    /**
+     * This counter is used for hysteresis (debouncing).
+     */
+    uint32_t count;
+    /**
+     * An integer, increments for each half-tone in pitch.
+     */
+    int8_t pitch;
+    /**
+     * The voice being used to sound this key.
+     */
+    IVoice *voice;
+
+    Key() {
+        count = state = 0;
+        voice = NULL;
+    }
+    /**
+     * Checks to see if this key is being pressed/touched.
+     */
+    void check(void);
 };
 
 #endif     // SYNTH_H_INCLUDED

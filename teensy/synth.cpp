@@ -1,4 +1,8 @@
+#if ! __ARM
+#include <stdio.h>
+#endif
 #include <math.h>
+
 #include "synth.h"
 
 #define UNIT_2   0x200000000LL
@@ -12,9 +16,59 @@
 #define FMUL  ((uint32_t) (2 * 6.2831853 * DT * UNIT))
 #define NOT_TOO_SMALL(x)    MAX(x, 0.01)
 
+#define KEYDOWN_HYSTERESIS 10
+
+ISynth *_synth = NULL;
+uint8_t (*_read_key)(uint32_t) = NULL;
+
+void use_read_key(uint8_t (*rk)(uint32_t))
+{
+    _read_key = rk;
+}
+
+void use_synth(ISynth *s)
+{
+    _synth = s;
+    s->quiet();
+}
+
+ISynth * get_synth(void)
+{
+    return _synth;
+}
+
 float small_random() {
     return -2.0 + 0.01 * (rand() % 400);
 }
+
+int32_t mult_signed(int32_t x, int32_t y)
+{
+    return (((int64_t) x) * y) >> 32;
+}
+
+int32_t mult_unsigned(uint32_t x, uint32_t y)
+{
+    return (((uint64_t) x) * y) >> 32;
+}
+
+int32_t mult_unsigned_signed(uint32_t x, int32_t y)
+{
+    return (((uint64_t) x) * y) >> 32;
+}
+
+void assertion(int cond, const char *strcond,
+               const char *file, const int line)
+{
+#if ! __ARM
+    if (!cond) {
+        fprintf(stderr,
+                "%s(%d) ASSERTION FAILED: %s\n",
+                file, line, strcond);
+        exit(1);
+    }
+#endif
+}
+
 
 uint8_t Queue::read(uint32_t *x) {
     if (empty()) return 1;
@@ -242,4 +296,34 @@ void Filter::step(int32_t x) {
     integrator2 = ADDCLIP(integrator2, MULSHIFT32(w0dt, integrator1));
     integrator1 = ADDCLIP(integrator1, MULSHIFT32(w0dt, u));
     u = clip(y);
+}
+
+void Key::check(void) {
+    if (_read_key != NULL && _read_key(id)) {
+        if (state) {
+            count = 0;
+        } else {
+            if (count < KEYDOWN_HYSTERESIS) {
+                count++;
+                if (count == KEYDOWN_HYSTERESIS) {
+                    state = 1;
+                    count = 0;
+                    if (_synth != NULL) _synth->keydown(pitch);
+                }
+            }
+        }
+    } else {
+        if (!state) {
+            count = 0;
+        } else {
+            if (count < KEYDOWN_HYSTERESIS) {
+                count++;
+                if (count == KEYDOWN_HYSTERESIS) {
+                    state = 0;
+                    count = 0;
+                    if (_synth != NULL) _synth->keyup(pitch);
+                }
+            }
+        }
+    }
 }
