@@ -30,6 +30,14 @@ uint8_t Queue::write(uint32_t x) {
     return 0;
 }
 
+void Synth::quiet(void) {
+    uint8_t i;
+    for (i = 0; i < 100; i++)
+        assignments[i] = NULL;
+    for (i = 0; i < num_voices; i++)
+        voices[i]->quiet();
+    next_voice_to_assign = 0;
+}
 
 void Synth::keydown(int8_t pitch) {
     IVoice *v = assignments[pitch + 50];
@@ -49,6 +57,7 @@ void Synth::keyup(int8_t pitch) {
     IVoice *v = assignments[pitch + 50];
     if (v != NULL) {
         v->keyup();
+        assignments[pitch + 50] = NULL;
     }
 }
 

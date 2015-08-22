@@ -1,14 +1,11 @@
-/*
-We have a 40 kHz or 50 kHz timer interrupt that handles sound
-samples. First it writes the previously computed sample to the serial DAC.
-Then it computes the sample for the next time.
-*/
-
 #include <TimerOne.h>
 
 #include "common.h"
 #include "voice.h"
 #include "key.h"
+
+#define NUM_KEYS 10   // 17? 34? 40?
+#define NUM_VOICES 3
 
 Key *keyboard[NUM_KEYS];
 
@@ -21,8 +18,8 @@ class ThreadSafeSynth : public Synth
     }
 };
 
-ThreadSafeSynth s;
-ISynth *synth = &s;
+ThreadSafeSynth s, s2;
+ISynth *synth;
 
 /**
  * The timer interrupt takes audio samples from the queue and feeds
@@ -33,7 +30,7 @@ void timer_interrupt(void)
 {
     static uint8_t led_time;
     uint32_t x;
-    if (s.get_sample(&x) == 0) {
+    if (synth->get_sample(&x) == 0) {
         analogWrite(A14, x);
     } else {
         led_time = 100;
@@ -46,76 +43,72 @@ void timer_interrupt(void)
     }
 }
 
+int8_t _pitches[] = { 0, 2, 4, 5, 7, 9, 11, 12 };
+int8_t *pitches = (int8_t*) &_pitches;
 
 void setup() {
-    int i;
+    uint8_t i;
     for (i = 0; i < NUM_VOICES; i++)
-        s.add(new Voice());
+        s.add(new NoisyVoice());
+    for (i = 0; i < NUM_VOICES; i++)
+        s2.add(new SimpleVoice());
+    synth = &s;
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(timer_interrupt);
-    pinMode(11, INPUT_PULLUP);
-    pinMode(10, OUTPUT);
-    digitalWrite(10, LOW);
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(5, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(7, OUTPUT);
-    pinMode(8, OUTPUT);
-    pinMode(9, OUTPUT);
+    pinMode(0, INPUT_PULLUP);
+    pinMode(1, INPUT_PULLUP);
+    pinMode(2, INPUT_PULLUP);
+    pinMode(3, INPUT_PULLUP);
+    pinMode(4, INPUT_PULLUP);
+    pinMode(5, INPUT_PULLUP);
+    pinMode(6, INPUT_PULLUP);
+    pinMode(7, INPUT_PULLUP);
+    pinMode(8, INPUT_PULLUP);
+    pinMode(9, INPUT_PULLUP);
     pinMode(LED_BUILTIN, OUTPUT);
 
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i] = new Key();
         keyboard[i]->id = i;
-        keyboard[i]->pitch = i;
+        keyboard[i]->pitch = pitches[i];
     }
 }
 
 uint8_t read_key(uint32_t id)
 {
-    uint32_t Y = 0;
-    uint32_t j = id, chip;
-    digitalWrite(10, LOW);
-    j = id;
-    switch (id) {    // OOPS WIRING ERRORS
-        case 0:
-            j = 1;
-            break;
-        case 1:
-            j = 0;
-            break;
+    if (digitalReadFast(id) == LOW) {
+        switch (id) {
+            case 8:
+                s.quiet();
+                s2.quiet();
+                cli();
+                synth = &s;
+                sei();
+                return 0;
+                break;
+            case 9:
+                s.quiet();
+                s2.quiet();
+                cli();
+                synth = &s2;
+                sei();
+                return 0;
+                break;
+        }
+        return 1;
+    } else {
+        return 0;
     }
-    chip = j >> 3;
-    digitalWrite(4, (j >> 2) & 1);
-    digitalWrite(3, (j >> 1) & 1);
-    digitalWrite(2, (j >> 0) & 1);
-    digitalWrite(5, chip == 1);   // OOPS WIRING ERROR
-    digitalWrite(6, chip == 0);
-    digitalWrite(7, chip == 2);
-    digitalWrite(8, chip == 3);
-    digitalWrite(9, chip == 4);
-    Y = 0;
-    digitalWrite(10, HIGH);
-    while (!digitalReadFast(11)) Y++;
-    digitalWrite(10, LOW);
-    return Y;
 }
 
 /**
  * Arduino loop function
- * @todo Read soft pots
- * @todo Read the left-hand keyboard
- * @todo Create Pitch class
- * @todo Map keys to reachable pitches
  */
 void loop(void) {
     int i;
-
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
     for (i = 0; i < 64; i++)
-        s.compute_sample();
+        synth->compute_sample();
 }

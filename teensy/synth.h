@@ -8,9 +8,20 @@
 // Used a lot for fixed-point arithmetic.
 #define UNIT     0x100000000LL
 
+#define MIN(x, y)   (((x) < (y)) ? (x) : (y))
+#define MAX(x, y)   (((x) > (y)) ? (x) : (y))
+
+#define MULSHIFT32(x, y)  ((((int64_t) x) * y) >> 32)
+#define ADDCLIP(x, y)   clip(((int64_t) x) + ((int64_t) y))
+
+inline int32_t clip(int64_t x) {
+    return MAX(-0x80000000LL, MIN(0x7fffffffLL, x));
+}
+
 class IVoice {
 public:
     virtual ~IVoice() {}   // http://stackoverflow.com/questions/318064
+    virtual void quiet(void) = 0;
     virtual void step(void) = 0;
     virtual void setfreq(float f) = 0;
     virtual void keydown(void) = 0;
@@ -22,6 +33,7 @@ public:
 class ISynth {
 public:
     virtual ~ISynth() {}
+    virtual void quiet(void) = 0;
     virtual void add(IVoice *voice) = 0;
     virtual void keydown(int8_t pitch) = 0;
     virtual void keyup(int8_t pitch) = 0;
@@ -107,6 +119,8 @@ public:
         voices[num_voices++] = voice;
     }
 
+    void quiet(void);
+
     // Pitch is in half-tones, middle C is at 0.
     void keydown(int8_t pitch);
     void keyup(int8_t pitch);
@@ -145,6 +159,11 @@ public:
 
     uint32_t state() {
         return _state;
+    }
+    void quiet(void) {
+        _state = 0;
+        _value = 0;
+        dvalue = 0;
     }
     uint32_t output() {
         return _value >> 32;

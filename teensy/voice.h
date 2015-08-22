@@ -3,14 +3,51 @@
 
 #include "synth.h"
 
-class Voice : public IVoice {
+
+class SimpleVoice : public IVoice {
+public:
+    Oscillator osc1;
+    ADSR adsr;
+
+    SimpleVoice() {
+        osc1.setwaveform(1);
+        adsr.setA(0.1);
+        adsr.setD(0.4);
+        adsr.setS(0.2);
+        adsr.setR(0.1);
+    }
+    void step(void) {
+        osc1.step();
+        adsr.step();
+    }
+    void quiet(void) {
+        adsr.quiet();
+    }
+    bool idle(void) {
+        return adsr.state() == 0;
+    }
+    void setfreq(float f) {
+        osc1.setfreq(f);
+    }
+    void keydown(void) {
+        adsr.keydown();
+    }
+    void keyup(void) {
+        adsr.keyup();
+    }
+    int32_t output(void) {
+        return mult_unsigned_signed(adsr.output(), osc1.output() >> 2);
+    }
+};
+
+class NoisyVoice : public IVoice {
 public:
     Oscillator osc1, osc2, osc3;
     ADSR adsr, adsr2;
     Filter filt;
     uint32_t _f;
 
-    Voice() {
+    NoisyVoice() {
         filt.setQ(6);
         osc1.setwaveform(1);
         osc2.setwaveform(2);
@@ -44,6 +81,10 @@ public:
         osc1.setfreq(f);
         osc2.setfreq(f + small_random());
         osc3.setfreq(f / 2 + 0.5 * small_random());
+    }
+    void quiet(void) {
+        adsr.quiet();
+        adsr2.quiet();
     }
     void keydown(void) {
         adsr.keydown();

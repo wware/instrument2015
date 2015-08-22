@@ -4,11 +4,9 @@
 
 #include "teensy/voice.h"
 
-
 FILE *outf, *gp_outf;
 int t;
 Synth s;
-
 
 int main(void)
 {
@@ -19,7 +17,7 @@ int main(void)
     fprintf(outf, "samples = [\n");
 
     for (int i = 0; i < 5; i++)
-        s.add(new Voice());
+        s.add(new NoisyVoice());
 
     for (t = 0; t < 3 * SAMPLING_RATE; t++) {
         int32_t y;
