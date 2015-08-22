@@ -3,28 +3,41 @@ pip install markdown
 python -m markdown README.md > README.html
 -->
 
-The Tooba is an electronic musical instrument built into a piece of PVC tubing (hence the name). It borrows principles from the Moog-style analog music synthesizers of past decades.
+Modular Music Synthesis in C++
+====
 
-[![Video demo of the instrument](http://img.youtube.com/vi/QGhZ0tecp60/0.jpg)](https://www.youtube.com/watch?v=QGhZ0tecp60)
+Historical background
+----
 
 Way back when, one of my friends in high school was a guy named [Dave Wilson](http://www.matrixsynth.com/2010/08/rip-david-hillel-wilson-curator-of-new.html) whose father got him into 1970s-era Moog-style analog electronic music synthesizers. Dave created a museum of historical synthesizers in his home in Nashua, New Hampshire. Throughout our high school and college years, we exchanged ideas and circuits and bits of lore for various synthesizer hacks.
 
-Music synthesizers of that era were actually special-purpose [analog computers](https://en.wikipedia.org/wiki/Analog_computer), performing arithmetic operations with [integrators, summers, and other such circuits](https://courses.engr.illinois.edu/ece486/labs/lab1/analog_computer_manual.pdf). These computations can be performed digitally by a microprocessor or special-purpose digital circuit (e.g. FPGA). So Dave and I both at various points and in various contexts wrote code to do that.
+Music synthesizers of that era were composed of [modules](https://en.wikipedia.org/wiki/Modular_synthesizer) and were actually special-purpose [analog computers](https://en.wikipedia.org/wiki/Analog_computer), performing arithmetic operations with [integrators, summers, and other such circuits](https://courses.engr.illinois.edu/ece486/labs/lab1/analog_computer_manual.pdf). These computations can be performed digitally by a microprocessor or special-purpose digital circuit (e.g. FPGA). So Dave and I both at various points and in various contexts wrote code to do that.
 
-Sound generation in the Tooba (and keyboard scanning and voice assignment) is done in [C++](https://github.com/wware/instrument2015/blob/master/nextstage/teensy/teensy.ino) running on a 32-bit ARM microcontroller.
+Sound generation in this code is done in C++, and can run on the [Teensy 3.1 board](https://www.pjrc.com/teensy/teensy31.html) which has a 32-bit ARM microcontroller capable of running at 96 MHz.
 
-Status, plans, etc
+Embodiments
 ----
 
-The first PVC prototype, the one shown at Providence on Aug 8th 2015, did all sound generation in the interrupt handler. More recently, the interrupt handler only transfers audio samples from a queue to the microcontroller's on-chip 12-bit DAC, and sound generation occurs in the loop() function.
+This code has two readily available embodiments. One is the test.py script which will generate an audio file called "quux.aiff". It will attempt to play the file.
 
-* Doxygen stuff is now [online](http://wware.github.io/instrument2015/).
-* Removing sound generation from the interrupt handler and moving it into the main loop solved a LOT of problems, and now I can run the interrupt at 40 kHz. But I am still hearing some aliasing, so I'll need a lowpass filter after the DAC. Use this [rail-to-rail op amp](http://www.digikey.com/product-detail/en/LT1677CN8%23PBF/LT1677CN8%23PBF-ND/962980).
-* ADSR and other slow-moving things should perform real calculations at only around 50 Hz, not 40 or 50 kHz. In between calculations they should use linear interpolation. Four billion divided by 50K is 80K, so it’s fine to use 16 fraction bits to interpolate. This will significantly speed things up.
-* Never copy or move blocks of data. Move pointers instead. The persistence data for a voice should live in one place and never move.
-* The next step right now is to take the code in the Voice class and split it into VCO, VCA and ADSR classes. Then add a Noise class, a Scaler class, a Summer class, and a VCF class. The audio outputs of all these should be 24-bit signed integers in the range from -0x80_0000 to 0x7F_FFFF. Use asserts to make sure they never go outside that range.
-* Set up a [monkey test framework](https://en.wikipedia.org/wiki/Monkey_test) that virtually pounds on the keyboard, and detects overflows, underruns, etc.
-  * A [SWIG wrapper](http://swig.org/) will be very helpful with this.
+The other is an easy-to-build piece of electronics using a Teensy board, some batteries, some pushbuttons, a few components, and a pair of earbuds. I call this thing a "trivisynth" because it is the most trivial piece of hardware that one could justifiably call a synthesizer.
+
+Performance considerations
+----
+
+Fixed-point arithmetic because the ARM has no floating-point hardware. Interrupt handler should be limited in scope. Some things could be coded in assembly language, and that may be done in the future. If you get buffer underruns (the LED turns on) then you can either decrease the SAMPLING_RATE or the number of voices.
+
+test.py
+====
+
+TL;DR
+
+trivisynth
+====
+
+You'll need [Teensyduino](https://www.pjrc.com/teensy/teensyduino.html) set up in order to load the code onto your Teensy board.
+
+Provide instructions to build the damn thing and a little info about how to play it.
 
 Teensy 3.1 info
 ----
@@ -35,26 +48,11 @@ Teensy 3.1 info
 * [Here](https://forum.pjrc.com/threads/25317-Assembly-coding-for-Teensy3-1) is a great discussion of embedding assembly in C code. Also see http://www.ethernut.de/en/documents/arm-inline-asm.html.
 * [A C header file](http://www.keil.com/dd/docs/arm/freescale/kinetis/mk20d7.h) for registers in the MK20DX.
 * [Some nice info](http://www.peter-cockerell.net/aalp/html/frames.html) on ARM assembly language.
+* There is an [online ARM C++ compiler](http://assembly.ynh.io/).
 
-Earlier prototype
-----
+Here is what assembly language looks like.
 
-I want to read the GPIO in assembly to accurately measure the period of the oscillator. This code ran on the June prototype and measured the capacitance of the touch sensitive keyboard. The capacitance was used in the RC time constant of a free-running oscillator and the idea here is to get a measurement roughly proportional to the period.
-
-1. Set counter to zero.
-2. If input is LOW, go to step 7.
-3. Wait for a falling edge. Proceed when input is LOW.
-4. Increment counter while waiting for rising edge. Proceed when input is HIGH.
-5. Increment counter while waiting for falling edge. Proceed when input is LOW.
-6. Go to step 10.
-7. Wait for a rising edge. Proceed when input is HIGH.
-8. Increment counter while waiting for falling edge. Proceed when input is LOW.
-9. Increment counter while waiting for rising edge. Proceed when input is HIGH.
-10. Return counter.
-
-So that piece is assembly, and then in C you choose a touch contact and call that function. That should ensure that you read the keyboard about as fast as it can be read. The code for this is buried in [the sandbox directory](https://github.com/wware/instrument2015/blob/master/sandbox/prototype1/prototype1.ino#L7).
-
-~~~
+```c++
 static int measurePeriod(void)
 {
     // Step 1, set up registers
@@ -75,6 +73,4 @@ static int measurePeriod(void)
     );
     return count;
 }
-~~~
-
-This works well in both the [Arduino/Teensy IDE](https://www.pjrc.com/teensy/teensyduino.html) and in the [online ARM C++ compiler](http://assembly.ynh.io/).
+```
