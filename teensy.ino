@@ -6,9 +6,8 @@ Then it computes the sample for the next time.
 
 #include <TimerOne.h>
 
-#include "common.h"
+#include "synth.h"
 #include "voice.h"
-#include "key.h"
 
 Key *keyboard[NUM_KEYS];
 

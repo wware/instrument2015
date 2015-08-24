@@ -25,12 +25,13 @@ public:
         adsr2.setR(0.6);
     }
     void step(void) {
+        uint64_t __f = _f;
         osc1.step();
         osc2.step();
         osc3.step();
         adsr.step();
         adsr2.step();
-        filt.setF(MULSHIFT32(_f, adsr2.output()));
+        filt.setF((__f * adsr2.output()) >> 32);
         int64_t x = osc1.output();
         x += osc2.output();
         x += osc3.output();
@@ -44,6 +45,10 @@ public:
         osc1.setfreq(f);
         osc2.setfreq(f + small_random());
         osc3.setfreq(f / 2 + 0.5 * small_random());
+    }
+    void quiet(void) {
+        adsr.quiet();
+        adsr2.quiet();
     }
     void keydown(void) {
         adsr.keydown();
