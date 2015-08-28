@@ -80,20 +80,12 @@ uint8_t read_key(uint32_t id)
     uint32_t j = id, chip;
     digitalWrite(10, LOW);
     j = id;
-    switch (id) {    // OOPS WIRING ERRORS
-        case 0:
-            j = 1;
-            break;
-        case 1:
-            j = 0;
-            break;
-    }
     chip = j >> 3;
     digitalWrite(4, (j >> 2) & 1);
     digitalWrite(3, (j >> 1) & 1);
     digitalWrite(2, (j >> 0) & 1);
-    digitalWrite(5, chip == 1);   // OOPS WIRING ERROR
-    digitalWrite(6, chip == 0);
+    digitalWrite(5, chip == 0);
+    digitalWrite(6, chip == 1);
     digitalWrite(7, chip == 2);
     digitalWrite(8, chip == 3);
     digitalWrite(9, chip == 4);
