@@ -1,16 +1,10 @@
-/*
-We have a 40 kHz or 50 kHz timer interrupt that handles sound
-samples. First it writes the previously computed sample to the serial DAC.
-Then it computes the sample for the next time.
-*/
-
 #include <TimerOne.h>
 
-#include "common.h"
+#include "synth.h"
 #include "voice.h"
-#include "key.h"
 
-Key *keyboard[NUM_KEYS];
+#define THRESHOLD 10
+#define NUM_KEYS 16
 
 class ThreadSafeSynth : public Synth
 {
@@ -21,8 +15,9 @@ class ThreadSafeSynth : public Synth
     }
 };
 
-ThreadSafeSynth s;
-ISynth *synth = &s;
+Key *keyboard[NUM_KEYS];
+ThreadSafeSynth s, s2, s3;
+ISynth *synth_ary[3];
 
 /**
  * The timer interrupt takes audio samples from the queue and feeds
@@ -33,7 +28,7 @@ void timer_interrupt(void)
 {
     static uint8_t led_time;
     uint32_t x;
-    if (s.get_sample(&x) == 0) {
+    if (get_synth()->get_sample(&x) == 0) {
         analogWrite(A14, x);
     } else {
         led_time = 100;
@@ -46,11 +41,42 @@ void timer_interrupt(void)
     }
 }
 
-
+/**
+ * Note that there are different numbers of voices assigned for the
+ * different types of voice. The more complicated a voice is, the
+ * less polyphony is possible. There are two ways to address this.
+ *
+ * * Lower the sampling rate, which adversely impacts sound quality.
+ * * Speed up the code. That means doing a lot of profiling
+ *   (best done with a GPIO pin and an oscilloscope in this situation)
+ *   and then write tighter C++ code and possibly some assembly language.
+ */
 void setup() {
-    int i;
-    for (i = 0; i < NUM_VOICES; i++)
-        s.add(new Voice());
+    uint8_t i;
+    /*
+     * The more complicated a voice is, the less polyphony is possible.
+     * There are two ways to address this. One is to lower the sampling
+     * rate (which adversely impacts sound quality), and speeding up the
+     * code. That means doing a lot of profiling (best done with a GPIO
+     * pin and an oscilloscope in this situation) possibly followed by
+     * tighter C++ code and possibly some assembly language.
+     */
+#define NUM_NOISY_VOICES  4
+#define NUM_SIMPLE_VOICES  14
+#define NUM_SQUARE_VOICES  8
+    synth_ary[0] = &s;
+    synth_ary[1] = &s2;
+    synth_ary[2] = &s3;
+    for (i = 0; i < NUM_NOISY_VOICES; i++)
+        s.add(new NoisyVoice());
+    for (i = 0; i < NUM_SIMPLE_VOICES; i++)
+        s2.add(new SimpleVoice());
+    for (i = 0; i < NUM_SQUARE_VOICES; i++)
+        s3.add(new TwoSquaresVoice());
+    s.quiet();
+    use_synth_array(synth_ary, 3);
+    use_synth(0);
+    use_read_key(&read_key);
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(timer_interrupt);
@@ -93,7 +119,7 @@ uint8_t read_key(uint32_t id)
     digitalWrite(10, HIGH);
     while (!digitalReadFast(11)) Y++;
     digitalWrite(10, LOW);
-    return Y;
+    return Y > THRESHOLD;
 }
 
 /**
@@ -109,5 +135,5 @@ void loop(void) {
     for (i = 0; i < NUM_KEYS; i++)
         keyboard[i]->check();
     for (i = 0; i < 64; i++)
-        s.compute_sample();
+        get_synth()->compute_sample();
 }

@@ -7,24 +7,39 @@
 
 FILE *outf, *gp_outf;
 int t;
-Synth s;
+Synth s, s2, s3;
+ISynth *synth_ary[3];
 
 
 int main(void)
 {
+    uint8_t i;
     gp_outf = fopen("foo.gp", "w");
 
     outf = fopen("foo.py", "w");
     fprintf(outf, "sampfreq = %lf\n", (double) SAMPLING_RATE);
     fprintf(outf, "samples = [\n");
 
-    for (int i = 0; i < 5; i++)
-        s.add(new Voice());
+#define NUM_NOISY_VOICES  4
+#define NUM_SIMPLE_VOICES  14
+#define NUM_SQUARE_VOICES  8
+    synth_ary[0] = &s;
+    synth_ary[1] = &s2;
+    synth_ary[2] = &s3;
+    for (i = 0; i < NUM_NOISY_VOICES; i++)
+        s.add(new NoisyVoice());
+    for (i = 0; i < NUM_SIMPLE_VOICES; i++)
+        s2.add(new SimpleVoice());
+    for (i = 0; i < NUM_SQUARE_VOICES; i++)
+        s3.add(new TwoSquaresVoice());
+    s.quiet();
+    use_synth_array(synth_ary, 3);
+    use_synth(0);
 
     for (t = 0; t < 3 * SAMPLING_RATE; t++) {
         int32_t y;
-        s.compute_sample();
-        ASSERT(s.get_sample((uint32_t *) &y) == 0);
+        get_synth()->compute_sample();
+        ASSERT(get_synth()->get_sample((uint32_t *) &y) == 0);
 
         // why the left shift? why 5 and not 4 or 6?
         fprintf(outf, "%ld,\n", (long int) y << 5);

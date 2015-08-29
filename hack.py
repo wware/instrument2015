@@ -2,7 +2,7 @@ import math
 import os
 import sys
 
-FILES = "instr.cpp teensy/common.cpp teensy/synth.cpp"
+FILES = "instr.cpp teensy/synth.cpp"
 CMD = ("g++ -Wall -g -D__ASSERT -Iteensy -o foo " + FILES)
 assert os.system(CMD) == 0, CMD
 
