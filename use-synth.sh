@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SYNTHREV=f4eb2a860be9205f98a6084feafbd36d505bb1ff
+SYNTHREV=76cca934c0e39a44600465eebf73122083094a53
 
 git clone git@github.com:wware/Synth.cpp
 (cd Synth.cpp; git checkout $SYNTHREV)
