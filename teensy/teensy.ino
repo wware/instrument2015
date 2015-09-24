@@ -3,8 +3,8 @@
 #include "synth.h"
 #include "voice.h"
 
-#define THRESHOLD 10
-#define NUM_KEYS 16
+#define THRESHOLD 5
+#define NUM_KEYS 36
 
 class ThreadSafeSynth : public Synth
 {
@@ -18,6 +18,32 @@ class ThreadSafeSynth : public Synth
 Key *keyboard[NUM_KEYS];
 ThreadSafeSynth s, s2, s3;
 ISynth *synth_ary[3];
+int which_synth = 0;
+
+class FunctionKey : public Key
+{
+    void keyup(void) { /* nada */ }
+    void keydown(void) {
+        switch (id) {
+            case 34:
+                which_synth = (which_synth + 1) % 3;
+                synth_ary[which_synth]->quiet();
+                cli();
+                use_synth(which_synth);
+                sei();
+                break;
+            case 35:
+                which_synth = (which_synth + 2) % 3;
+                synth_ary[which_synth]->quiet();
+                cli();
+                use_synth(which_synth);
+                sei();
+                break;
+            default:
+                break;
+        }
+    }
+};
 
 /**
  * The timer interrupt takes audio samples from the queue and feeds
@@ -61,9 +87,9 @@ void setup() {
      * pin and an oscilloscope in this situation) possibly followed by
      * tighter C++ code and possibly some assembly language.
      */
-#define NUM_NOISY_VOICES  4
-#define NUM_SIMPLE_VOICES  14
-#define NUM_SQUARE_VOICES  8
+#define NUM_NOISY_VOICES  3
+#define NUM_SIMPLE_VOICES  6
+#define NUM_SQUARE_VOICES  4
     synth_ary[0] = &s;
     synth_ary[1] = &s2;
     synth_ary[2] = &s3;
@@ -75,7 +101,7 @@ void setup() {
         s3.add(new TwoSquaresVoice());
     s.quiet();
     use_synth_array(synth_ary, 3);
-    use_synth(0);
+    use_synth(which_synth);
     use_read_key(&read_key);
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
@@ -93,10 +119,19 @@ void setup() {
     pinMode(9, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
-    for (i = 0; i < NUM_KEYS; i++) {
+    for (i = 0; i < 17; i++) {
         keyboard[i] = new Key();
         keyboard[i]->id = i;
         keyboard[i]->pitch = i;
+    }
+    for ( ; i < 34; i++) {
+        keyboard[i] = new Key();
+        keyboard[i]->id = i;
+        keyboard[i]->pitch = i - 5;
+    }
+    for ( ; i < NUM_KEYS; i++) {
+        keyboard[i] = new FunctionKey();
+        keyboard[i]->id = i;
     }
 }
 
@@ -110,17 +145,19 @@ uint8_t read_key(uint32_t id)
     digitalWrite(4, (j >> 2) & 1);
     digitalWrite(3, (j >> 1) & 1);
     digitalWrite(2, (j >> 0) & 1);
-    digitalWrite(5, chip == 0);
-    digitalWrite(6, chip == 1);
-    digitalWrite(7, chip == 2);
-    digitalWrite(8, chip == 3);
-    digitalWrite(9, chip == 4);
+    digitalWrite(5, chip != 0);
+    digitalWrite(6, chip != 1);
+    digitalWrite(7, chip != 2);
+    digitalWrite(8, chip != 3);
+    digitalWrite(9, chip != 4);
     Y = 0;
     digitalWrite(10, HIGH);
     while (!digitalReadFast(11)) Y++;
     digitalWrite(10, LOW);
     return Y > THRESHOLD;
 }
+
+uint8_t scanned_key = 0;
 
 /**
  * Arduino loop function
@@ -132,8 +169,11 @@ uint8_t read_key(uint32_t id)
 void loop(void) {
     int i;
 
-    for (i = 0; i < NUM_KEYS; i++)
-        keyboard[i]->check();
-    for (i = 0; i < 64; i++)
+    for (i = 0; i < 8; i++) {
+        keyboard[scanned_key]->check();
+        scanned_key = (scanned_key + 1) % NUM_KEYS;
+    }
+    for (i = 0; i < 16; i++) {
         get_synth()->compute_sample();
+    }
 }

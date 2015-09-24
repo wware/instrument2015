@@ -1,7 +1,13 @@
 #!/bin/sh
 
-SYNTHREV=76cca934c0e39a44600465eebf73122083094a53
+if [ -n "$1" ]
+then
+    SYNTHREV="$1"
+else
+    SYNTHREV=master
+fi
 
+rm -rf Synth.cpp
 git clone git@github.com:wware/Synth.cpp
 (cd Synth.cpp; git checkout $SYNTHREV)
 
