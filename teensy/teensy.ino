@@ -4,7 +4,7 @@
 #include "voice.h"
 
 #define THRESHOLD 5
-#define NUM_KEYS 36
+#define NUM_KEYS 38
 
 class ThreadSafeSynth : public Synth
 {
@@ -24,6 +24,7 @@ class FunctionKey : public Key
 {
     void keyup(void) { /* nada */ }
     void keydown(void) {
+        int i;
         switch (id) {
             case 34:
                 which_synth = (which_synth + 1) % 3;
@@ -38,6 +39,18 @@ class FunctionKey : public Key
                 cli();
                 use_synth(which_synth);
                 sei();
+                break;
+            case 36:
+                if (keyboard[0]->pitch > -24) {
+                    for (i = 0; i < 34; i++)
+                        keyboard[i]->pitch -= 12;
+                }
+                break;
+            case 37:
+                if (keyboard[0]->pitch < 12) {
+                    for (i = 0; i < 34; i++)
+                        keyboard[i]->pitch += 12;
+                }
                 break;
             default:
                 break;
