@@ -41,15 +41,20 @@ class FunctionKey : public Key
                 sei();
                 break;
             case 36:
+                synth_ary[which_synth]->quiet();
                 if (keyboard[0]->pitch > -24) {
-                    for (i = 0; i < 34; i++)
+                    for (i = 0; i < 34; i++) {
                         keyboard[i]->pitch -= 12;
+                    }
                 }
                 break;
             case 37:
+                synth_ary[which_synth]->quiet();
+                synth_ary[which_synth]->quiet();
                 if (keyboard[0]->pitch < 12) {
-                    for (i = 0; i < 34; i++)
+                    for (i = 0; i < 34; i++) {
                         keyboard[i]->pitch += 12;
+                    }
                 }
                 break;
             default:
