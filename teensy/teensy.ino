@@ -50,7 +50,6 @@ class FunctionKey : public Key
                 break;
             case 37:
                 synth_ary[which_synth]->quiet();
-                synth_ary[which_synth]->quiet();
                 if (keyboard[0]->pitch < 12) {
                     for (i = 0; i < 34; i++) {
                         keyboard[i]->pitch += 12;
