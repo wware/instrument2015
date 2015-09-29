@@ -3,7 +3,6 @@
 #include "synth.h"
 #include "voice.h"
 
-#define THRESHOLD 5
 #define NUM_KEYS 38
 
 class ThreadSafeSynth : public Synth
@@ -15,12 +14,84 @@ class ThreadSafeSynth : public Synth
     }
 };
 
-Key *keyboard[NUM_KEYS];
+class NoteKey : public Key
+{
+private:
+    uint32_t threshold;
+
+    int successive_approximate(int lo, int hi) {
+        if (lo + 1 == hi) return hi;
+        int mid = (lo + hi) >> 1;
+        if (!read_n(mid))
+            return successive_approximate(lo, mid);
+        else
+            return successive_approximate(mid, hi);
+    }
+
+    bool read_n(uint32_t n) {
+        uint32_t chip = id >> 3;
+        digitalWrite(10, LOW);
+        digitalWrite(4, (id >> 2) & 1);
+        digitalWrite(3, (id >> 1) & 1);
+        digitalWrite(2, (id >> 0) & 1);
+        digitalWrite(5, chip != 0);
+        digitalWrite(6, chip != 1);
+        digitalWrite(7, chip != 2);
+        digitalWrite(8, chip != 3);
+        digitalWrite(9, chip != 4);
+
+        volatile uint32_t X = 0, Y = n, portc = 0x400FF080;
+
+        // offset 4 is set output
+        // offset 8 is clear output
+        // offset 16 is read input
+        asm volatile(
+            // digitalWrite(10, HIGH);
+            "mov %0, #0x10"                 "\n"
+            "str %0, [%2, #4]"              "\n"
+
+            // while (Y > 0) Y--;
+            "step1:"                        "\n"
+            "subs %1, %1, #1"               "\n"
+            "bne step1"                     "\n"
+
+            // X = !digitalReadFast(11);
+            "ldr %0, [%2, #16]"             "\n"
+            "eor %0, %0, #0x40"             "\n"
+            "ands %0, %0, #0x40"            "\n"
+
+            // digitalWrite(10, LOW);
+            "mov %1, #0x10"                 "\n"
+            "str %1, [%2, #8]"              "\n"
+            : "+r" (X), "+r" (Y), "+r" (portc)
+        );
+        return X;
+    }
+
+public:
+    void calibrate(void) {
+        int previous = 0, n;
+        for (n = 1; n < 1024; n <<=1) {
+            if (!read_n(n)) {
+                threshold = successive_approximate(previous, n);
+                return;
+            }
+            previous = n;
+        }
+        threshold = 1024;   // out of luck, probably
+    }
+
+    bool read(void) {
+        return read_n(threshold + 2);
+    }
+};
+
+NoteKey *keyboard[NUM_KEYS];
 ThreadSafeSynth s, s2, s3;
 ISynth *synth_ary[3];
 int which_synth = 0;
 
-class FunctionKey : public Key
+class FunctionKey : public NoteKey
 {
     void keyup(void) { /* nada */ }
     void keydown(void) {
@@ -119,7 +190,6 @@ void setup() {
     s.quiet();
     use_synth_array(synth_ary, 3);
     use_synth(which_synth);
-    use_read_key(&read_key);
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(timer_interrupt);
@@ -137,12 +207,12 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     for (i = 0; i < 17; i++) {
-        keyboard[i] = new Key();
+        keyboard[i] = new NoteKey();
         keyboard[i]->id = i;
         keyboard[i]->pitch = i;
     }
     for ( ; i < 34; i++) {
-        keyboard[i] = new Key();
+        keyboard[i] = new NoteKey();
         keyboard[i]->id = i;
         keyboard[i]->pitch = i - 5;
     }
@@ -150,28 +220,10 @@ void setup() {
         keyboard[i] = new FunctionKey();
         keyboard[i]->id = i;
     }
-}
 
-uint8_t read_key(uint32_t id)
-{
-    uint32_t Y = 0;
-    uint32_t j = id, chip;
-    digitalWrite(10, LOW);
-    j = id;
-    chip = j >> 3;
-    digitalWrite(4, (j >> 2) & 1);
-    digitalWrite(3, (j >> 1) & 1);
-    digitalWrite(2, (j >> 0) & 1);
-    digitalWrite(5, chip != 0);
-    digitalWrite(6, chip != 1);
-    digitalWrite(7, chip != 2);
-    digitalWrite(8, chip != 3);
-    digitalWrite(9, chip != 4);
-    Y = 0;
-    digitalWrite(10, HIGH);
-    while (!digitalReadFast(11)) Y++;
-    digitalWrite(10, LOW);
-    return Y > THRESHOLD;
+    for (i = 0; i < NUM_KEYS; i++) {
+        keyboard[i]->calibrate();
+    }
 }
 
 uint8_t scanned_key = 0;
