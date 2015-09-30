@@ -70,19 +70,20 @@ private:
 
 public:
     void calibrate(void) {
+        const int max = 4096;
         int previous = 0, n;
-        for (n = 1; n < 1024; n <<=1) {
+        for (n = 1; n < max; n <<=1) {
             if (!read_n(n)) {
-                threshold = successive_approximate(previous, n);
+                threshold = successive_approximate(previous, n) + 1;
                 return;
             }
             previous = n;
         }
-        threshold = 1024;   // out of luck, probably
+        threshold = max;   // out of luck, probably
     }
 
     bool read(void) {
-        return read_n(threshold + 2);
+        return read_n(threshold);
     }
 };
 
@@ -181,10 +182,10 @@ void setup() {
     synth_ary[0] = &s;
     synth_ary[1] = &s2;
     synth_ary[2] = &s3;
-    for (i = 0; i < NUM_NOISY_VOICES; i++)
-        s.add(new NoisyVoice());
     for (i = 0; i < NUM_SIMPLE_VOICES; i++)
-        s2.add(new SimpleVoice());
+        s.add(new SimpleVoice());
+    for (i = 0; i < NUM_NOISY_VOICES; i++)
+        s2.add(new NoisyVoice());
     for (i = 0; i < NUM_SQUARE_VOICES; i++)
         s3.add(new TwoSquaresVoice());
     s.quiet();
