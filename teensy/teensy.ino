@@ -19,7 +19,7 @@ class NoteKey : public Key
 private:
     uint32_t threshold;
 
-    int successive_approximate(int lo, int hi) {
+    uint32_t successive_approximate(uint32_t lo, uint32_t hi) {
         if (lo + 1 == hi) return hi;
         int mid = (lo + hi) >> 1;
         if (!read_n(mid))
@@ -70,16 +70,17 @@ private:
 
 public:
     void calibrate(void) {
-        const int max = 4096;
+        const int _max = 4096;
         int previous = 0, n;
-        for (n = 1; n < max; n <<=1) {
+        for (n = 1; n < _max; n <<=1) {
             if (!read_n(n)) {
-                threshold = successive_approximate(previous, n) + 1;
+                threshold =
+                    max(threshold, successive_approximate(previous, n) + 1);
                 return;
             }
             previous = n;
         }
-        threshold = max;   // out of luck, probably
+        threshold = max(threshold, _max);   // out of luck, probably
     }
 
     bool read(void) {
@@ -167,7 +168,7 @@ void timer_interrupt(void)
  *   and then write tighter C++ code and possibly some assembly language.
  */
 void setup() {
-    uint8_t i;
+    uint8_t i, j;
     /*
      * The more complicated a voice is, the less polyphony is possible.
      * There are two ways to address this. One is to lower the sampling
@@ -222,8 +223,10 @@ void setup() {
         keyboard[i]->id = i;
     }
 
-    for (i = 0; i < NUM_KEYS; i++) {
-        keyboard[i]->calibrate();
+    for (j = 0; j < 5; j++) {
+        for (i = 0; i < NUM_KEYS; i++) {
+            keyboard[i]->calibrate();
+        }
     }
 }
 
