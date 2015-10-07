@@ -20,7 +20,8 @@ private:
     uint32_t threshold;
 
     uint32_t successive_approximate(uint32_t lo, uint32_t hi) {
-        if (lo + 1 == hi) return hi;
+        if (hi < lo) return successive_approximation(hi, lo);
+        if (hi - lo <= 1) return hi;
         int mid = (lo + hi) >> 1;
         if (!read_n(mid))
             return successive_approximate(lo, mid);
