@@ -5,6 +5,8 @@
 
 #define NUM_KEYS 38
 
+#define DIAGNOSTICS 0
+
 class ThreadSafeSynth : public Synth
 {
     void write_sample(void) {
@@ -20,9 +22,9 @@ private:
     uint32_t threshold;
 
     uint32_t successive_approximate(uint32_t lo, uint32_t hi) {
-        if (hi < lo) return successive_approximation(hi, lo);
+        if (hi < lo) return successive_approximate(hi, lo);
         if (hi - lo <= 1) return hi;
-        int mid = (lo + hi) >> 1;
+        uint32_t mid = (lo + hi) >> 1;
         if (!read_n(mid))
             return successive_approximate(lo, mid);
         else
@@ -31,6 +33,11 @@ private:
 
     bool read_n(uint32_t n) {
         uint32_t chip = id >> 3;
+        /*
+         * It would be very good to replace all these digitalWrite
+         * calls with assembly language. The GPIOs on the Teensy are
+         * scrambled relative to the registers, so it's a pain, but doable.
+         */
         digitalWrite(10, LOW);
         digitalWrite(4, (id >> 2) & 1);
         digitalWrite(3, (id >> 1) & 1);
@@ -47,18 +54,25 @@ private:
         // offset 8 is clear output
         // offset 16 is read input
         asm volatile(
+            // X = 20;
+            "mov %0, #20"                   "\n"
+
+            // while (X > 0) X--;
+            "step1:"                        "\n"
+            "subs %0, %0, #1"               "\n"
+            "bne step1"                     "\n"
+
             // digitalWrite(10, HIGH);
             "mov %0, #0x10"                 "\n"
             "str %0, [%2, #4]"              "\n"
 
             // while (Y > 0) Y--;
-            "step1:"                        "\n"
+            "step2:"                        "\n"
             "subs %1, %1, #1"               "\n"
-            "bne step1"                     "\n"
+            "bne step2"                     "\n"
 
-            // X = !digitalReadFast(11);
+            // X = digitalReadFast(11);
             "ldr %0, [%2, #16]"             "\n"
-            "eor %0, %0, #0x40"             "\n"
             "ands %0, %0, #0x40"            "\n"
 
             // digitalWrite(10, LOW);
@@ -66,22 +80,28 @@ private:
             "str %1, [%2, #8]"              "\n"
             : "+r" (X), "+r" (Y), "+r" (portc)
         );
-        return X;
+        return !X;
     }
 
 public:
-    void calibrate(void) {
-        const int _max = 4096;
+    int fresh_calibrate(void) {
+        threshold = 0;
+        return calibrate();
+    }
+
+    int calibrate(void) {
+        const int _max = 250;
         int previous = 0, n;
         for (n = 1; n < _max; n <<=1) {
             if (!read_n(n)) {
                 threshold =
                     max(threshold, successive_approximate(previous, n) + 1);
-                return;
+                return threshold;
             }
             previous = n;
         }
         threshold = max(threshold, _max);   // out of luck, probably
+        return threshold;
     }
 
     bool read(void) {
@@ -170,6 +190,14 @@ void timer_interrupt(void)
  */
 void setup() {
     uint8_t i, j;
+
+#if DIAGNOSTICS
+    Serial.begin(9600);
+    while (!Serial) {
+        ; // wait for serial port to connect. Needed for native USB port only
+    }
+#endif
+
     /*
      * The more complicated a voice is, the less polyphony is possible.
      * There are two ways to address this. One is to lower the sampling
@@ -224,7 +252,10 @@ void setup() {
         keyboard[i]->id = i;
     }
 
-    for (j = 0; j < 5; j++) {
+    for (i = 0; i < NUM_KEYS; i++) {
+        keyboard[i]->fresh_calibrate();
+    }
+    for (j = 0; j < 3; j++) {
         for (i = 0; i < NUM_KEYS; i++) {
             keyboard[i]->calibrate();
         }
@@ -241,13 +272,20 @@ uint8_t scanned_key = 0;
  * @todo Map keys to reachable pitches
  */
 void loop(void) {
-    int i;
+    int i, j;
 
-    for (i = 0; i < 8; i++) {
+#if DIAGNOSTICS
+    i = keyboard[1]->fresh_calibrate();
+    for (j = 0; j < i; j++) Serial.print("*");
+    Serial.println();
+    delay(20);
+#else
+    for (i = j = 0; i < 8; i++) {
         keyboard[scanned_key]->check();
         scanned_key = (scanned_key + 1) % NUM_KEYS;
     }
     for (i = 0; i < 16; i++) {
         get_synth()->compute_sample();
     }
+#endif
 }
