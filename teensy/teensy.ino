@@ -16,6 +16,24 @@ class ThreadSafeSynth : public Synth
     }
 };
 
+// Port A, Port C, Port D
+uint32_t port_settings[3 * NUM_KEYS];
+
+#define PORT_A 0x400FF000
+#define PORT_C 0x400FF080
+#define PORT_D 0x400FF0C0
+
+void set_port(uint32_t port, uint32_t mask, uint32_t value) {
+    // offset 4 is set output
+    // offset 8 is clear output
+    asm volatile(
+        "str %1, [%0, #8]"              "\n"
+        "str %2, [%0, #4]"              "\n"
+        : "+r" (port), "+r" (mask), "+r" (value)
+    );
+
+}
+
 class NoteKey : public Key
 {
 private:
@@ -32,28 +50,20 @@ private:
     }
 
     bool read_n(uint32_t n) {
-        uint32_t chip = id >> 3;
-        /*
-         * It would be very good to replace all these digitalWrite
-         * calls with assembly language. The GPIOs on the Teensy are
-         * scrambled relative to the registers, so it's a pain, but doable.
-         */
-        digitalWrite(10, LOW);
-        digitalWrite(4, (id >> 2) & 1);
-        digitalWrite(3, (id >> 1) & 1);
-        digitalWrite(2, (id >> 0) & 1);
-        digitalWrite(5, chip != 0);
-        digitalWrite(6, chip != 1);
-        digitalWrite(7, chip != 2);
-        digitalWrite(8, chip != 3);
-        digitalWrite(9, chip != 4);
+        volatile uint32_t X = 0, Y = n, portc = PORT_C;
 
-        volatile uint32_t X = 0, Y = n, portc = 0x400FF080;
+        set_port(PORT_A, 0x3000, port_settings[3 * id]);
+        set_port(PORT_C, 0x0008, port_settings[3 * id + 1]);
+        set_port(PORT_D, 0x009D, port_settings[3 * id + 2]);
 
         // offset 4 is set output
         // offset 8 is clear output
         // offset 16 is read input
         asm volatile(
+            // digitalWrite(10, LOW);
+            "mov %0, #0x10"                 "\n"
+            "str %0, [%2, #8]"              "\n"
+
             // X = 20;
             "mov %0, #20"                   "\n"
 
@@ -206,9 +216,9 @@ void setup() {
      * pin and an oscilloscope in this situation) possibly followed by
      * tighter C++ code and possibly some assembly language.
      */
-#define NUM_NOISY_VOICES  3
-#define NUM_SIMPLE_VOICES  6
-#define NUM_SQUARE_VOICES  4
+#define NUM_NOISY_VOICES  4
+#define NUM_SIMPLE_VOICES  12
+#define NUM_SQUARE_VOICES  7
     synth_ary[0] = &s;
     synth_ary[1] = &s2;
     synth_ary[2] = &s3;
@@ -250,6 +260,20 @@ void setup() {
     for ( ; i < NUM_KEYS; i++) {
         keyboard[i] = new FunctionKey();
         keyboard[i]->id = i;
+    }
+
+    for (i = 0; i < NUM_KEYS; i++) {
+        uint32_t chip = i >> 3;
+        // Port A
+        port_settings[3 * i] = (i & 6) << 11;
+        // Port C
+        port_settings[3 * i + 1] = (chip != 4) ? 0x08 : 0x00;
+        // Port D
+        port_settings[3 * i + 2] = (i & 1) +
+            ((chip != 0) ? 0x80 : 0x00) +
+            ((chip != 1) ? 0x10 : 0x00) +
+            ((chip != 2) ? 0x04 : 0x00) +
+            ((chip != 3) ? 0x08 : 0x00);
     }
 
     for (i = 0; i < NUM_KEYS; i++) {
