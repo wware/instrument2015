@@ -2,10 +2,13 @@
 
 #include "synth.h"
 #include "voice.h"
-
-#define NUM_KEYS 38
+#include "tests.h"
 
 #define DIAGNOSTICS 0
+#define KEYBOARD 1
+#define NUM_KEYS 24
+
+/** @file */
 
 class ThreadSafeSynth : public Synth
 {
@@ -16,10 +19,11 @@ class ThreadSafeSynth : public Synth
     }
 };
 
-// Port A, Port C, Port D
+// Port A, Port B, Port D
 uint32_t port_settings[3 * NUM_KEYS];
 
 #define PORT_A 0x400FF000
+#define PORT_B 0x400FF040
 #define PORT_C 0x400FF080
 #define PORT_D 0x400FF0C0
 
@@ -31,7 +35,6 @@ static inline void set_port(uint32_t port, uint32_t mask, uint32_t value) {
         "str %2, [%0, #4]"              "\n"
         : "+r" (port), "+r" (mask), "+r" (value)
     );
-
 }
 
 class NoteKey : public Key
@@ -50,18 +53,18 @@ private:
     }
 
     bool read_n(uint32_t n) {
-        volatile uint32_t X = 0, Y = n, portc = PORT_C;
+        volatile uint32_t X = 0, Y = n, portd = PORT_D;
 
-        set_port(PORT_A, 0x3000, port_settings[3 * id]);
-        set_port(PORT_C, 0x0008, port_settings[3 * id + 1]);
-        set_port(PORT_D, 0x009D, port_settings[3 * id + 2]);
+        set_port(PORT_A, 0x03000, port_settings[3 * id]);
+        set_port(PORT_B, 0x30000, port_settings[3 * id + 1]);
+        set_port(PORT_D, 0x00085, port_settings[3 * id + 2]);
 
         // offset 4 is set output
         // offset 8 is clear output
         // offset 16 is read input
         asm volatile(
-            // digitalWrite(10, LOW);
-            "mov %0, #0x10"                 "\n"
+            // digitalWrite(7, LOW);
+            "mov %0, #0x04"                 "\n"
             "str %0, [%2, #8]"              "\n"
 
             // X = 20;
@@ -72,8 +75,8 @@ private:
             "subs %0, %0, #1"               "\n"
             "bne step1"                     "\n"
 
-            // digitalWrite(10, HIGH);
-            "mov %0, #0x10"                 "\n"
+            // digitalWrite(7, HIGH);
+            "mov %0, #0x04"                 "\n"
             "str %0, [%2, #4]"              "\n"
 
             // while (Y > 0) Y--;
@@ -81,14 +84,14 @@ private:
             "subs %1, %1, #1"               "\n"
             "bne step2"                     "\n"
 
-            // X = digitalReadFast(11);
+            // X = digitalReadFast(8);
             "ldr %0, [%2, #16]"             "\n"
-            "ands %0, %0, #0x40"            "\n"
+            "ands %0, %0, #0x08"            "\n"
 
-            // digitalWrite(10, LOW);
-            "mov %1, #0x10"                 "\n"
+            // digitalWrite(7, LOW);
+            "mov %1, #0x04"                 "\n"
             "str %1, [%2, #8]"              "\n"
-            : "+r" (X), "+r" (Y), "+r" (portc)
+            : "+r" (X), "+r" (Y), "+r" (portd)
         );
         return !X;
     }
@@ -120,9 +123,9 @@ public:
 };
 
 NoteKey *keyboard[NUM_KEYS];
+int which_synth = 0;
 ThreadSafeSynth s, s2, s3;
 ISynth *synth_ary[3];
-int which_synth = 0;
 
 class FunctionKey : public NoteKey
 {
@@ -130,32 +133,32 @@ class FunctionKey : public NoteKey
     void keydown(void) {
         int i;
         switch (id) {
-            case 34:
+            case 20:
                 which_synth = (which_synth + 1) % 3;
                 synth_ary[which_synth]->quiet();
                 cli();
                 use_synth(which_synth);
                 sei();
                 break;
-            case 35:
+            case 21:
                 which_synth = (which_synth + 2) % 3;
                 synth_ary[which_synth]->quiet();
                 cli();
                 use_synth(which_synth);
                 sei();
                 break;
-            case 36:
+            case 22:
                 synth_ary[which_synth]->quiet();
                 if (keyboard[0]->pitch > -24) {
-                    for (i = 0; i < 34; i++) {
+                    for (i = 0; i < NUM_KEYS - 4; i++) {
                         keyboard[i]->pitch -= 12;
                     }
                 }
                 break;
-            case 37:
+            case 23:
                 synth_ary[which_synth]->quiet();
                 if (keyboard[0]->pitch < 12) {
-                    for (i = 0; i < 34; i++) {
+                    for (i = 0; i < NUM_KEYS - 4; i++) {
                         keyboard[i]->pitch += 12;
                     }
                 }
@@ -165,6 +168,9 @@ class FunctionKey : public NoteKey
         }
     }
 };
+
+extern uint32_t tune[];
+uint32_t start_time;
 
 /**
  * The timer interrupt takes audio samples from the queue and feeds
@@ -200,14 +206,13 @@ void timer_interrupt(void)
  */
 void setup() {
     uint8_t i, j;
-
 #if DIAGNOSTICS
     Serial.begin(9600);
     while (!Serial) {
         ; // wait for serial port to connect. Needed for native USB port only
     }
 #endif
-
+    start_time = micros();
     /*
      * The more complicated a voice is, the less polyphony is possible.
      * There are two ways to address this. One is to lower the sampling
@@ -216,64 +221,56 @@ void setup() {
      * pin and an oscilloscope in this situation) possibly followed by
      * tighter C++ code and possibly some assembly language.
      */
-#define NUM_NOISY_VOICES  4
+#define NUM_NOISY_VOICES  3
 #define NUM_SIMPLE_VOICES  12
-#define NUM_SQUARE_VOICES  7
+#define NUM_SQUARE_VOICES  6
     synth_ary[0] = &s;
     synth_ary[1] = &s2;
     synth_ary[2] = &s3;
     for (i = 0; i < NUM_SIMPLE_VOICES; i++)
         s.add(new SimpleVoice());
-    for (i = 0; i < NUM_NOISY_VOICES; i++)
-        s2.add(new NoisyVoice());
     for (i = 0; i < NUM_SQUARE_VOICES; i++)
-        s3.add(new TwoSquaresVoice());
+        s2.add(new TwoSquaresVoice());
+    for (i = 0; i < NUM_NOISY_VOICES; i++)
+        s3.add(new NoisyVoice());
     s.quiet();
     use_synth_array(synth_ary, 3);
-    use_synth(which_synth);
+    use_synth(0);
     analogWriteResolution(12);
     Timer1.initialize((int) (1000000 * DT));
     Timer1.attachInterrupt(timer_interrupt);
-    pinMode(11, INPUT_PULLUP);
-    pinMode(10, OUTPUT);
-    digitalWrite(10, LOW);
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(5, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(7, OUTPUT);
-    pinMode(8, OUTPUT);
-    pinMode(9, OUTPUT);
+    pinMode(0, OUTPUT);  // B16  -- A
+    pinMode(1, OUTPUT);  // B17  -- B
+    pinMode(2, OUTPUT);  // D0   -- C
+    pinMode(3, OUTPUT);  // A12  -- INH0
+    pinMode(4, OUTPUT);  // A13  -- INH1
+    pinMode(5, OUTPUT);  // D7   -- INH2
+    pinMode(7, OUTPUT);  // D2   -- drive
+    pinMode(8, INPUT_PULLUP);  // D3  -- sense
     pinMode(LED_BUILTIN, OUTPUT);
 
-    for (i = 0; i < 17; i++) {
+    for (i = 0; i < NUM_KEYS - 4; i++) {
         keyboard[i] = new NoteKey();
         keyboard[i]->id = i;
         keyboard[i]->pitch = i;
     }
-    for ( ; i < 34; i++) {
-        keyboard[i] = new NoteKey();
-        keyboard[i]->id = i;
-        keyboard[i]->pitch = i - 5;
-    }
     for ( ; i < NUM_KEYS; i++) {
         keyboard[i] = new FunctionKey();
         keyboard[i]->id = i;
+        keyboard[i]->pitch = 0;
     }
 
     for (i = 0; i < NUM_KEYS; i++) {
         uint32_t chip = i >> 3;
         // Port A
-        port_settings[3 * i] = (i & 6) << 11;
-        // Port C
-        port_settings[3 * i + 1] = (chip != 4) ? 0x08 : 0x00;
+        port_settings[3 * i] =
+            ((chip != 0) ? 0x1000 : 0) +
+            ((chip != 1) ? 0x2000 : 0);
+        // Port B
+        port_settings[3 * i + 1] = (i & 3) << 16;
         // Port D
-        port_settings[3 * i + 2] = (i & 1) +
-            ((chip != 0) ? 0x80 : 0x00) +
-            ((chip != 1) ? 0x10 : 0x00) +
-            ((chip != 2) ? 0x04 : 0x00) +
-            ((chip != 3) ? 0x08 : 0x00);
+        port_settings[3 * i + 2] = ((i & 4) >> 2) +
+            ((chip != 2) ? 0x80 : 0);
     }
 
     for (i = 0; i < NUM_KEYS; i++) {
@@ -286,29 +283,29 @@ void setup() {
     }
 }
 
-uint8_t scanned_key = 0;
-
 /**
  * Arduino loop function
- * @todo Read soft pots
- * @todo Read the left-hand keyboard
- * @todo Create Pitch class
- * @todo Map keys to reachable pitches
  */
 void loop(void) {
-    int i, j;
+    int i;
 
 #if DIAGNOSTICS
+    int j;
     i = keyboard[1]->fresh_calibrate();
     for (j = 0; j < i; j++) Serial.print("*");
     Serial.println();
     delay(20);
 #else
-    for (i = j = 0; i < 8; i++) {
-        keyboard[scanned_key]->check();
-        scanned_key = (scanned_key + 1) % NUM_KEYS;
+#if KEYBOARD
+    for (i = 0; i < NUM_KEYS; i++)
+        keyboard[i]->check();
+#else
+    uint32_t msecs = (micros() - start_time) / 1000;
+    if (play_tune(tune, msecs)) {
+        start_time = micros();
     }
-    for (i = 0; i < 16; i++) {
+#endif
+    for (i = 0; i < 32; i++) {
         get_synth()->compute_sample();
     }
 #endif
