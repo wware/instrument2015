@@ -13,6 +13,18 @@ Music synthesizers of that era were actually special-purpose [analog computers](
 
 Sound generation in the Tooba (and keyboard scanning and voice assignment) is done in [C++](https://github.com/wware/instrument2015/blob/master/nextstage/teensy/teensy.ino) running on a 32-bit ARM microcontroller.
 
+Newer stuff, November 2015
+----
+
+People have expressed interest in purchasing Toobas, so I have been planning some improvements.
+* An internal [sound transducer](https://www.adafruit.com/products/1784) driven by a [D-class audio amp](http://www.ti.com/lit/ds/slos527a/slos527a.pdf).
+* This requires a 12-volt battery, so I need a [5-volt regulator](https://www.adafruit.com/products/1385).
+* A volume control, and jacks for both 1/4" (guitar amps) and 3.5mm (ear buds, computer speakers).
+* Cleaned-up mechanics, no giant cabinet hinges.
+* A lower-temperature process for soldering keys, so that the copper is not discolored. Producing keys is easier and quicker.
+
+I've used this and another project to start planning 3D constructions in OpenSCAD. This can go farther. Write modules that produce OpenSCAD models for [inclusion in the whole](https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Include_Statement) but are also a [modular BOM](https://en.wikipedia.org/wiki/Bill_of_materials). Modules for 3D-printable blocks should be able to produce STL files and specify what materials are acceptable. Modules for parts from Home Depot or Adafruit or Digikey should include prices, SKUs, part numbers, etc.
+
 Status, plans, etc
 ----
 
