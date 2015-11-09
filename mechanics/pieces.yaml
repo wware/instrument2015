@@ -1,0 +1,222 @@
+---
+constants:
+    INCH: 25.4
+
+    OVERALL_LENGTH: 24 * INCH
+    INNER_DIAMETER: 2.9375 * INCH
+    OUTER_DIAMETER: 3.375 * INCH
+
+    PANEL_HEIGHT: 2 * INCH
+    PANEL_WIDTH: 2 * INCH
+    PANEL_Z: 2 * INCH
+    theta: asin(PANEL_WIDTH / INNER_DIAMETER)
+    PANEL_X: 0.5 * INNER_DIAMETER * cos(theta)
+
+    PLYWOOD_HEIGHT: 9.5 * INCH
+    PLYWOOD_WIDTH: 2 * INCH
+    PLYWOOD_Z: 6 * INCH
+    theta2: asin(PLYWOOD_WIDTH / INNER_DIAMETER)
+    PLYWOOD_X: 0.5 * INNER_DIAMETER * cos(theta2)
+
+    KEY_OFFSET: (7.75 / 9) * INCH
+    KEYPAD_34_HEIGHT: 10 * KEY_OFFSET
+    KEYPAD_34_Z: PANEL_Z + PANEL_HEIGHT + 2 * INCH
+
+    SEPARATION: 4 * INCH
+
+halfpipe:
+    structure:
+        - intersection:
+            - translate:
+                - x: 0
+                  y: -5*INCH
+                  z: -1
+                - cube:
+                    x: 10*INCH
+                    y: 10*INCH
+                    z: OVERALL_LENGTH+2
+            - difference:
+                - cylinder:
+                    d: OUTER_DIAMETER
+                    h: OVERALL_LENGTH
+                - translate:
+                    - x: 0
+                      y: 0
+                      z: -1
+                    - cylinder:
+                        d: INNER_DIAMETER
+                        h: OVERALL_LENGTH+2
+
+machinescrew:
+    args:
+        - L
+    color:
+        r: 0
+        g: 1
+        b: 0
+    structure:
+        - rotate:
+            - x: 0
+              y: -90
+              z: 0
+            - cylinder:
+                h: L
+                d: 0.25 * INCH
+            - cylinder:
+                h: 0.35 * INCH
+                d1: 0.5 * INCH
+                d2: 0
+
+plywood:
+    structure:
+        - translate:
+            - x: 0
+              y: -.5 * PLYWOOD_WIDTH
+              z: 0
+            - cube:
+                x: 0.25 * INCH
+                y: PLYWOOD_WIDTH
+                z: PLYWOOD_HEIGHT
+        - translate:
+            - x: 0.5 * INCH
+              y: -.5 * PLYWOOD_WIDTH
+              z: 1 * INCH
+            - cube:
+                x: 0.1*INCH
+                y: PLYWOOD_WIDTH
+                z: 6*INCH
+        - translate:
+            - x: 0.25 * INCH
+              y: 0
+              z: PLYWOOD_HEIGHT - 1.5 * INCH
+            - rotate:
+                - x: 0
+                  y: 90
+                  z: 0
+                - cylinder:
+                    h: 1 * INCH
+                    d: 1.5 * INCH
+        - translate:
+            - x: -0.64 * INCH
+              y: 0
+              z: 0.5 * INCH
+            - mirror:
+                - x: 1
+                  y: 0
+                  z: 0
+                - machinescrew:
+                    L: 1.25 * INCH
+        - translate:
+            - x: -0.64 * INCH
+              y: 0
+              z: PLYWOOD_HEIGHT - 0.5 * INCH
+            - mirror:
+                - x: 1
+                  y: 0
+                  z: 0
+                - machinescrew:
+                    L: 1.25 * INCH
+
+panel:
+    structure:
+        - translate:
+            - x: -0.125*INCH
+              y: -.5 * PANEL_WIDTH
+              z: -INCH
+            - cube:
+                x: 0.125*INCH
+                y: PANEL_WIDTH
+                z: PANEL_HEIGHT + 2*INCH
+        - translate:
+            - x: 0.65*INCH
+              y: 0
+              z: PANEL_HEIGHT + 0.5 * INCH
+            - machinescrew:
+                L: 1.25*INCH
+        - translate:
+            - x: 0.65*INCH
+              y: 0
+              z: -0.5 * INCH
+            - machinescrew:
+                L: 1.25*INCH
+
+keyboard:
+    scad: |
+        angle_diff = 25;
+        for (i = [0 : 1 : 9]) {
+            translate([1.6*INCH * cos(-1.5 * angle_diff),
+                       1.6*INCH * sin(-1.5 * angle_diff),
+                       KEYPAD_34_Z + i * KEY_OFFSET])
+                sphere(d=.5*INCH);
+            translate([1.6*INCH * cos(.5 * angle_diff),
+                       1.6*INCH * sin(.5 * angle_diff),
+                       KEYPAD_34_Z + i * KEY_OFFSET])
+                sphere(d=.5*INCH);
+        }
+        for (i = [0 : 1 : 1]) {
+            translate([1.6*INCH * cos(-.5 * angle_diff),
+                       1.6*INCH * sin(-.5 * angle_diff),
+                       KEYPAD_34_Z + (i + .5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+            translate([1.6*INCH * cos(1.5 * angle_diff),
+                       1.6*INCH * sin(1.5 * angle_diff),
+                       KEYPAD_34_Z + (i + .5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+        }
+        for (i = [0 : 1 : 2]) {
+            translate([1.6*INCH * cos(-.5 * angle_diff),
+                       1.6*INCH * sin(-.5 * angle_diff),
+                       KEYPAD_34_Z + (i + 3.5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+            translate([1.6*INCH * cos(1.5 * angle_diff),
+                       1.6*INCH * sin(1.5 * angle_diff),
+                       KEYPAD_34_Z + (i + 3.5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+        }
+        for (i = [0 : 1 : 1]) {
+            translate([1.6*INCH * cos(-.5 * angle_diff),
+                       1.6*INCH * sin(-.5 * angle_diff),
+                       KEYPAD_34_Z + (i + 7.5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+            translate([1.6*INCH * cos(1.5 * angle_diff),
+                       1.6*INCH * sin(1.5 * angle_diff),
+                       KEYPAD_34_Z + (i + 7.5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+        }
+        for (i = [0 : 1 : 5]) {
+            translate([1.6*INCH * cos(.5 * angle_diff),
+                       1.6*INCH * sin(.5 * angle_diff),
+                       KEYPAD_34_Z + (i + 10.5) * KEY_OFFSET])
+                sphere(d=.5*INCH);
+        }
+
+front:
+    scad: |
+        cutout_width = PANEL_WIDTH;
+        difference() {
+            halfpipe();
+            translate([0, -cutout_width / 2, PANEL_Z])
+                cube([2 * INCH, cutout_width, PANEL_HEIGHT]);
+        }
+        keyboard();
+        translate([PANEL_X, 0, PANEL_Z])
+            panel();
+        translate([1.75*INCH, 0, OVERALL_LENGTH - 1.5*INCH])
+            machinescrew(1.75 * INCH);
+
+back:
+    scad: |
+        mirror([1, 0, 0]) halfpipe();
+        translate([-PLYWOOD_X, 0, PLYWOOD_Z])
+            plywood();
+        translate([-1.7*INCH, 0, 1.5*INCH])
+            mirror([1, 0, 0])
+                machinescrew(1.5 * INCH);
+        translate([-1.7*INCH, 0, OVERALL_LENGTH - 1.5*INCH])
+            mirror([1, 0, 0])
+                machinescrew(1.5 * INCH);
+
+whole:
+    scad: |
+        translate([SEPARATION / 2, 0, 0]) front();
+        translate([-SEPARATION / 2, 0, 0]) back();
