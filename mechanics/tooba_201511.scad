@@ -24,7 +24,7 @@ KEY_OFFSET = (7.75 / 9) * INCH;
 KEYPAD_34_HEIGHT = 10 * KEY_OFFSET;
 KEYPAD_34_Z = PANEL_Z + PANEL_HEIGHT + 2 * INCH;
 
-SEPARATION = 4 * INCH;
+SEPARATION = 0 * INCH;
 
 module halfpipe() {
     intersection() {
@@ -38,7 +38,7 @@ module halfpipe() {
     }
 }
 
-module machinescrew(L) {
+module machinescrew(L) {   /* 1/4"-20 */
     color([0, 1, 0])
         rotate([0, -90, 0]) {
             cylinder(h=L, d=0.25*INCH);
@@ -116,7 +116,7 @@ module plywood() {
 }
 
 module panel() {
-    color([0, 0.7, 0.9])
+    color([0, 0.7, 0.9, 0.6])
         translate([-0.125*INCH, -.5 * PANEL_WIDTH,  -INCH])
             cube([0.125*INCH, PANEL_WIDTH, PANEL_HEIGHT + 2*INCH]);
     translate([0.65*INCH, 0, PANEL_HEIGHT + 0.5*INCH])
@@ -133,9 +133,9 @@ module front() {
             cube([2 * INCH, cutout_width, PANEL_HEIGHT]);
     }
     keyboard();
-    translate([PANEL_X, 0, PANEL_Z])
+    %translate([PANEL_X, 0, PANEL_Z])
         panel();
-    translate([1.75*INCH, 0, OVERALL_LENGTH - 1.5*INCH])
+    %translate([1.75*INCH, 0, OVERALL_LENGTH - 1.5*INCH])
         machinescrew(1.75 * INCH);
 }
 
@@ -151,5 +151,5 @@ module back() {
             machinescrew(1.5 * INCH);
 }
 
-translate([SEPARATION / 2, 0, 0]) front();
+%translate([SEPARATION / 2, 0, 0]) front();
 translate([-SEPARATION / 2, 0, 0]) back();
