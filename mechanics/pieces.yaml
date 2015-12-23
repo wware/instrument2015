@@ -142,50 +142,51 @@ panel:
 
 keyboard:
     scad: |
+        R = 1.6 * INCH;
         angle_diff = 25;
         for (i = [0 : 1 : 9]) {
-            translate([1.6*INCH * cos(-1.5 * angle_diff),
-                       1.6*INCH * sin(-1.5 * angle_diff),
+            translate([R * cos(-1.5 * angle_diff),
+                       R * sin(-1.5 * angle_diff),
                        KEYPAD_34_Z + i * KEY_OFFSET])
                 sphere(d=.5*INCH);
-            translate([1.6*INCH * cos(.5 * angle_diff),
-                       1.6*INCH * sin(.5 * angle_diff),
+            translate([R * cos(.5 * angle_diff),
+                       R * sin(.5 * angle_diff),
                        KEYPAD_34_Z + i * KEY_OFFSET])
                 sphere(d=.5*INCH);
         }
         for (i = [0 : 1 : 1]) {
-            translate([1.6*INCH * cos(-.5 * angle_diff),
-                       1.6*INCH * sin(-.5 * angle_diff),
+            translate([R * cos(-.5 * angle_diff),
+                       R * sin(-.5 * angle_diff),
                        KEYPAD_34_Z + (i + .5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
-            translate([1.6*INCH * cos(1.5 * angle_diff),
-                       1.6*INCH * sin(1.5 * angle_diff),
+            translate([R * cos(1.5 * angle_diff),
+                       R * sin(1.5 * angle_diff),
                        KEYPAD_34_Z + (i + .5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
         }
         for (i = [0 : 1 : 2]) {
-            translate([1.6*INCH * cos(-.5 * angle_diff),
-                       1.6*INCH * sin(-.5 * angle_diff),
+            translate([R * cos(-.5 * angle_diff),
+                       R * sin(-.5 * angle_diff),
                        KEYPAD_34_Z + (i + 3.5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
-            translate([1.6*INCH * cos(1.5 * angle_diff),
-                       1.6*INCH * sin(1.5 * angle_diff),
+            translate([R * cos(1.5 * angle_diff),
+                       R * sin(1.5 * angle_diff),
                        KEYPAD_34_Z + (i + 3.5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
         }
         for (i = [0 : 1 : 1]) {
-            translate([1.6*INCH * cos(-.5 * angle_diff),
-                       1.6*INCH * sin(-.5 * angle_diff),
+            translate([R * cos(-.5 * angle_diff),
+                       R * sin(-.5 * angle_diff),
                        KEYPAD_34_Z + (i + 7.5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
-            translate([1.6*INCH * cos(1.5 * angle_diff),
-                       1.6*INCH * sin(1.5 * angle_diff),
+            translate([R * cos(1.5 * angle_diff),
+                       R * sin(1.5 * angle_diff),
                        KEYPAD_34_Z + (i + 7.5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
         }
         for (i = [0 : 1 : 5]) {
-            translate([1.6*INCH * cos(.5 * angle_diff),
-                       1.6*INCH * sin(.5 * angle_diff),
+            translate([R * cos(.5 * angle_diff),
+                       R * sin(.5 * angle_diff),
                        KEYPAD_34_Z + (i + 10.5) * KEY_OFFSET])
                 sphere(d=.5*INCH);
         }
