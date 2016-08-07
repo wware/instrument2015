@@ -1,0 +1,66 @@
+def transpose(n, chord):
+    return map(lambda note: note + n, chord)
+
+circle_of_fifths = [
+    6, 1, 8, 3, 10, 5, 0, 7, 2, 9, 4, 10
+]
+
+def get_chord(modifiers):
+    # modifiers bit assignments
+    # bit 2 is the first string, the minor string
+    # bits 1 and 0 are the next two strings for adding stuff
+    #   to the major or minor triad
+    return [
+        (0, 4, 7),        # major triad
+        (0, 4, 7, 10),    # dominant 7th
+        (0, 4, 8),        # augmented
+        (0, 4, 8, 11),    # augmented major 7th
+        (0, 3, 7),        # minor triad
+        (0, 3, 7, 10),    # minor 7th
+        (0, 3, 7, 11),    # minor major 7th
+        (0, 3, 7, 8),     # minor 6th
+    ][modifiers]
+
+def pick_seven(offset, chord):
+    chord = (
+        transpose(offset - 24, chord) +
+        transpose(offset - 12, chord) +
+        transpose(offset, chord) +
+        transpose(offset + 12, chord) +
+        transpose(offset + 24, chord)
+    )
+    # Find the note closest to zero
+    # If two are equally close, select the lower
+    # Use this note as the middle of the seven strings
+    dists = {}
+    for i in range(len(chord)):
+        key = abs(chord[i])
+        if key not in dists:
+            dists[key] = []
+        dists[abs(chord[i])].append(i)
+    for i in range(5):
+        if i in dists and len(dists[i]) > 0:
+            break
+    assert i < 5
+    middle_string = dists[i][0]
+    return chord[middle_string-3:middle_string+4]
+
+# Put the middle string as close as possible to middle C.
+# Build a lookup table for sets of string pitch assignments.
+lst = []
+for modifiers in range(8):
+    for i in circle_of_fifths:
+        lst += transpose(60, pick_seven(i, get_chord(modifiers)))
+
+outf = open("teensy/chords.cpp", "w")
+outf.write("""unsigned char chord_table[] = {
+""")
+while True:
+    if not lst:
+        break
+    n = 20
+    sublist, lst = lst[:n], lst[n:]
+    outf.write("  " + ",".join(map(str, sublist)) + (lst and "," or "") + "\n")
+outf.write("""};
+""")
+outf.close()

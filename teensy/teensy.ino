@@ -1,284 +1,201 @@
-#include <TimerOne.h>
+extern unsigned char chord_table[];
 
-#include "synth.h"
-#include "voice.h"
+#include "keys.h"
+#define _DEMO_MODE 0
+#define _HACK 0
 
-#define NUM_KEYS 38
+// Something is wonky about the eight high-numbered key connections
+// on this PC board, probably some kind of assembly error, but the
+// lower 32 are working OK.
+#define NUM_KEYS 32
 
 #define DIAGNOSTICS 0
 
-class ThreadSafeSynth : public Synth
-{
-    void write_sample(void) {
-        cli();
-        Synth::write_sample();
-        sei();
-    }
-};
+#define PIANO            0
+#define CELESTA         10
+#define TUBULAR_BELLS   14
+#define CHURCH_ORGAN    19
+#define NYLON_GUITAR    24
+#define CELLO           42
+#define ORCHESTRAL_HARP 46
+#define CHOIR_AAHS      52
+#define TRUMPET         56
+#define SYNTH_BRASS     62
+#define ALTO_SAX        65
+#define FLUTE           73
+
+#define INH0  2
+#define INH1  14
+#define INH2  7
+#define INH3  8
+#define INH4  6
+
+uint32_t inhibits[] = {INH0, INH1, INH2, INH3, INH4};
+
+#define A_SELECT 15
+#define B_SELECT 22
+#define C_SELECT 23
 
 // Port A, Port C, Port D
-uint32_t port_settings[3 * NUM_KEYS];
+uint32_t port_settings[2 * NUM_KEYS];
 
 #define PORT_A 0x400FF000
 #define PORT_C 0x400FF080
 #define PORT_D 0x400FF0C0
 
-static inline void set_port(uint32_t port, uint32_t mask, uint32_t value) {
+static inline uint32_t read_key(uint32_t X, uint32_t Y, uint32_t portc) {
     // offset 4 is set output
     // offset 8 is clear output
+    // offset 16 is read input
     asm volatile(
-        "str %1, [%0, #8]"              "\n"
-        "str %2, [%0, #4]"              "\n"
-        : "+r" (port), "+r" (mask), "+r" (value)
-    );
+        // digitalWrite(9, LOW);
+        "mov %0, #0x08"                 "\n"
+        "str %0, [%2, #8]"              "\n"
 
+        // X = 20;
+        "mov %0, #20"                   "\n"
+
+        // while (X > 0) X--;
+        "1:"                            "\n"
+        "subs %0, %0, #1"               "\n"
+        "bne 1b"                        "\n"
+
+        // digitalWrite(9, HIGH);
+        "mov %0, #0x08"                 "\n"
+        "str %0, [%2, #4]"              "\n"
+
+        // while (Y > 0) Y--;
+        "2:"                            "\n"
+        "subs %1, %1, #1"               "\n"
+        "bne 2b"                        "\n"
+
+        // X = digitalReadFast(10);
+        "ldr %0, [%2, #16]"             "\n"
+        "ands %0, %0, #0x10"            "\n"
+
+        // digitalWrite(9, LOW);
+        "mov %1, #0x08"                 "\n"
+        "str %1, [%2, #8]"              "\n"
+        : "+r" (X), "+r" (Y), "+r" (portc)
+    );
+    return !X;
 }
 
-class NoteKey : public Key
+void flash_int(int n)
 {
-private:
-    uint32_t threshold;
-
-    uint32_t successive_approximate(uint32_t lo, uint32_t hi) {
-        if (hi < lo) return successive_approximate(hi, lo);
-        if (hi - lo <= 1) return hi;
-        uint32_t mid = (lo + hi) >> 1;
-        if (!read_n(mid))
-            return successive_approximate(lo, mid);
-        else
-            return successive_approximate(mid, hi);
+    int i = n / 5;
+    n -= 5 * i;
+    while (i--) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        delayMicroseconds(1000 * 1000);
+        digitalWrite(LED_BUILTIN, LOW);
+        delayMicroseconds(200 * 1000);
     }
+    while (n--) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        delayMicroseconds(200 * 1000);
+        digitalWrite(LED_BUILTIN, LOW);
+        delayMicroseconds(200 * 1000);
+    }
+}
+
+
+int h = 0;
+
+class Key : public BaseKey
+{
+public:
+    Key(uint32_t _id) : BaseKey(_id) {}
 
     bool read_n(uint32_t n) {
-        volatile uint32_t X = 0, Y = n, portc = PORT_C;
-
-        set_port(PORT_A, 0x3000, port_settings[3 * id]);
-        set_port(PORT_C, 0x0008, port_settings[3 * id + 1]);
-        set_port(PORT_D, 0x009D, port_settings[3 * id + 2]);
-
-        // offset 4 is set output
-        // offset 8 is clear output
-        // offset 16 is read input
-        asm volatile(
-            // digitalWrite(10, LOW);
-            "mov %0, #0x10"                 "\n"
-            "str %0, [%2, #8]"              "\n"
-
-            // X = 20;
-            "mov %0, #20"                   "\n"
-
-            // while (X > 0) X--;
-            "step1:"                        "\n"
-            "subs %0, %0, #1"               "\n"
-            "bne step1"                     "\n"
-
-            // digitalWrite(10, HIGH);
-            "mov %0, #0x10"                 "\n"
-            "str %0, [%2, #4]"              "\n"
-
-            // while (Y > 0) Y--;
-            "step2:"                        "\n"
-            "subs %1, %1, #1"               "\n"
-            "bne step2"                     "\n"
-
-            // X = digitalReadFast(11);
-            "ldr %0, [%2, #16]"             "\n"
-            "ands %0, %0, #0x40"            "\n"
-
-            // digitalWrite(10, LOW);
-            "mov %1, #0x10"                 "\n"
-            "str %1, [%2, #8]"              "\n"
-            : "+r" (X), "+r" (Y), "+r" (portc)
-        );
-        return !X;
+        digitalWrite(A_SELECT, (id & 1) ? HIGH : LOW);
+        digitalWrite(B_SELECT, (id & 2) ? HIGH : LOW);
+        digitalWrite(C_SELECT, (id & 4) ? HIGH : LOW);
+        unsigned int i;
+        for (i = 0; i < 5; i++) {
+            if (i == (id >> 3))
+                digitalWrite(inhibits[i], LOW);
+            else
+                digitalWrite(inhibits[i], HIGH);
+        }
+        return read_key(0, n, PORT_C);
     }
+};
 
+class HackKey : public Key
+{
 public:
-    int fresh_calibrate(void) {
-        threshold = 0;
-        return calibrate();
-    }
+    HackKey(uint32_t _id) : Key(_id) {}
 
-    int calibrate(void) {
-        const int _max = 250;
-        int previous = 0, n;
-        for (n = 1; n < _max; n <<=1) {
-            if (!read_n(n)) {
-                threshold =
-                    max(threshold, successive_approximate(previous, n) + 1);
-                return threshold;
-            }
-            previous = n;
-        }
-        threshold = max(threshold, _max);   // out of luck, probably
-        return threshold;
-    }
-
-    bool read(void) {
-        return read_n(threshold);
-    }
-};
-
-NoteKey *keyboard[NUM_KEYS];
-ThreadSafeSynth s, s2, s3;
-ISynth *synth_ary[3];
-int which_synth = 0;
-
-class FunctionKey : public NoteKey
-{
-    void keyup(void) { /* nada */ }
     void keydown(void) {
-        int i;
-        switch (id) {
-            case 34:
-                which_synth = (which_synth + 1) % 3;
-                synth_ary[which_synth]->quiet();
-                cli();
-                use_synth(which_synth);
-                sei();
-                break;
-            case 35:
-                which_synth = (which_synth + 2) % 3;
-                synth_ary[which_synth]->quiet();
-                cli();
-                use_synth(which_synth);
-                sei();
-                break;
-            case 36:
-                synth_ary[which_synth]->quiet();
-                if (keyboard[0]->pitch > -24) {
-                    for (i = 0; i < 34; i++) {
-                        keyboard[i]->pitch -= 12;
-                    }
-                }
-                break;
-            case 37:
-                synth_ary[which_synth]->quiet();
-                if (keyboard[0]->pitch < 12) {
-                    for (i = 0; i < 34; i++) {
-                        keyboard[i]->pitch += 12;
-                    }
-                }
-                break;
-            default:
-                break;
-        }
+        flash_int(id + 1);
     }
 };
 
-/**
- * The timer interrupt takes audio samples from the queue and feeds
- * them to the 12-bit DAC. If there is a queue underrun, it turns on
- * the LED briefly but visibly.
- */
-void timer_interrupt(void)
+class StringKey : public Key
 {
-    static uint8_t led_time;
-    uint32_t x;
-    if (get_synth()->get_sample(&x) == 0) {
-        analogWrite(A14, x);
-    } else {
-        led_time = 100;
-    }
-    if (led_time > 0) {
-        led_time--;
-        digitalWrite(LED_BUILTIN, HIGH);
-    } else {
-        digitalWrite(LED_BUILTIN, LOW);
-    }
-}
-
-/**
- * Note that there are different numbers of voices assigned for the
- * different types of voice. The more complicated a voice is, the
- * less polyphony is possible. There are two ways to address this.
- *
- * * Lower the sampling rate, which adversely impacts sound quality.
- * * Speed up the code. That means doing a lot of profiling
- *   (best done with a GPIO pin and an oscilloscope in this situation)
- *   and then write tighter C++ code and possibly some assembly language.
- */
-void setup() {
-    uint8_t i, j;
-
-#if DIAGNOSTICS
-    Serial.begin(9600);
-    while (!Serial) {
-        ; // wait for serial port to connect. Needed for native USB port only
-    }
-#endif
-
-    /*
-     * The more complicated a voice is, the less polyphony is possible.
-     * There are two ways to address this. One is to lower the sampling
-     * rate (which adversely impacts sound quality), and speeding up the
-     * code. That means doing a lot of profiling (best done with a GPIO
-     * pin and an oscilloscope in this situation) possibly followed by
-     * tighter C++ code and possibly some assembly language.
+public:
+    StringKey(uint32_t _id) : Key(_id) {}
+    /**
+     * An integer, increments for each half-tone in pitch.
      */
-#define NUM_NOISY_VOICES  4
-#define NUM_SIMPLE_VOICES  12
-#define NUM_SQUARE_VOICES  7
-    synth_ary[0] = &s;
-    synth_ary[1] = &s2;
-    synth_ary[2] = &s3;
-    for (i = 0; i < NUM_SIMPLE_VOICES; i++)
-        s.add(new SimpleVoice());
-    for (i = 0; i < NUM_NOISY_VOICES; i++)
-        s2.add(new NoisyVoice());
-    for (i = 0; i < NUM_SQUARE_VOICES; i++)
-        s3.add(new TwoSquaresVoice());
-    s.quiet();
-    use_synth_array(synth_ary, 3);
-    use_synth(which_synth);
-    analogWriteResolution(12);
-    Timer1.initialize((int) (1000000 * DT));
-    Timer1.attachInterrupt(timer_interrupt);
-    pinMode(11, INPUT_PULLUP);
-    pinMode(10, OUTPUT);
-    digitalWrite(10, LOW);
+    int8_t pitch;
+    /**
+     * The pitch of the most recent key_down event.
+     */
+    int8_t last_pitch;
+
+    void keydown(void) {
+        usbMIDI.sendNoteOn(pitch, 127, 1);
+        last_pitch = pitch;
+    }
+
+    void keyup(void) {
+        usbMIDI.sendNoteOff(last_pitch, 0, 1);
+    }
+};
+
+Key *keyboard[NUM_KEYS];
+
+
+void setup() {
+    uint8_t j;
+
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    uint8_t i;
+
+    usbMIDI.sendProgramChange(CHOIR_AAHS, 1);
+
+    pinMode(10, INPUT_PULLUP);
+    pinMode(9, OUTPUT);
+    digitalWrite(9, LOW);
     pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(5, OUTPUT);
     pinMode(6, OUTPUT);
     pinMode(7, OUTPUT);
     pinMode(8, OUTPUT);
-    pinMode(9, OUTPUT);
-    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(14, OUTPUT);
+    pinMode(15, OUTPUT);
+    pinMode(22, OUTPUT);
+    pinMode(23, OUTPUT);
 
-    for (i = 0; i < 17; i++) {
-        keyboard[i] = new NoteKey();
-        keyboard[i]->id = i;
-        keyboard[i]->pitch = i;
-    }
-    for ( ; i < 34; i++) {
-        keyboard[i] = new NoteKey();
-        keyboard[i]->id = i;
-        keyboard[i]->pitch = i - 5;
-    }
-    for ( ; i < NUM_KEYS; i++) {
-        keyboard[i] = new FunctionKey();
-        keyboard[i]->id = i;
-    }
-
+#if _HACK
     for (i = 0; i < NUM_KEYS; i++) {
-        uint32_t chip = i >> 3;
-        // Port A
-        port_settings[3 * i] = (i & 6) << 11;
-        // Port C
-        port_settings[3 * i + 1] = (chip != 4) ? 0x08 : 0x00;
-        // Port D
-        port_settings[3 * i + 2] = (i & 1) +
-            ((chip != 0) ? 0x80 : 0x00) +
-            ((chip != 1) ? 0x10 : 0x00) +
-            ((chip != 2) ? 0x04 : 0x00) +
-            ((chip != 3) ? 0x08 : 0x00);
+        keyboard[i] = new HackKey(i);
     }
+#else
+    for (i = 0; i < NUM_KEYS; i++) {
+        if (i < 7)
+            keyboard[i] = new StringKey(i);
+        else
+            keyboard[i] = new Key(i);
+    }
+#endif
 
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i]->fresh_calibrate();
     }
+
     for (j = 0; j < 3; j++) {
         for (i = 0; i < NUM_KEYS; i++) {
             keyboard[i]->calibrate();
@@ -288,28 +205,49 @@ void setup() {
 
 uint8_t scanned_key = 0;
 
-/**
- * Arduino loop function
- * @todo Read soft pots
- * @todo Read the left-hand keyboard
- * @todo Create Pitch class
- * @todo Map keys to reachable pitches
- */
-void loop(void) {
-    int i, j;
+int chords[4][6] = {
+    { 60, 64, 67, 70, 72, 76 },  // C major with B flat
+    { 60, 65, 69, 72, 77, 81 },   // F major
+    { 62, 65, 67, 71, 74, 77 },   // G major with F
+    { 60, 64, 67, 72, 76, 79 }    // C major
+};
 
-#if DIAGNOSTICS
-    i = keyboard[1]->fresh_calibrate();
-    for (j = 0; j < i; j++) Serial.print("*");
-    Serial.println();
-    delay(20);
+void loop(void) {
+#if _DEMO_MODE
+    int i;
+    static int j = 0;
+
+    delayMicroseconds(500000);
+
+    switch (j) {
+    case 0:
+        usbMIDI.sendProgramChange(NYLON_GUITAR, 1);
+        break;
+    case 1:
+        usbMIDI.sendProgramChange(CELESTA, 1);
+        break;
+    case 2:
+        usbMIDI.sendProgramChange(TRUMPET, 1);
+        break;
+    case 3:
+        usbMIDI.sendProgramChange(FLUTE, 1);
+        break;
+    }
+
+    for (i = 0; i < 6; i++) {
+        usbMIDI.sendNoteOn(chords[j][i] - 12, 127, 1);
+        delayMicroseconds(100000);
+    }
+    delayMicroseconds(50000);
+    for (i = 0; i < 6; i++) {
+        usbMIDI.sendNoteOff(chords[j][i] - 12, 0, 1);
+        delayMicroseconds(100000);
+    }
+
+    j = (j + 1) % 4;
+    if (j == 0) delayMicroseconds(500000);
 #else
-    for (i = j = 0; i < 8; i++) {
-        keyboard[scanned_key]->check();
-        scanned_key = (scanned_key + 1) % NUM_KEYS;
-    }
-    for (i = 0; i < 16; i++) {
-        get_synth()->compute_sample();
-    }
+    keyboard[scanned_key]->check();
+    scanned_key = (scanned_key + 1) % NUM_KEYS;
 #endif
 }
