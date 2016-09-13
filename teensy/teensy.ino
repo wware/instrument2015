@@ -272,48 +272,71 @@ void loop(void) {
     j = (j + 1) % 4;
     if (j == 0) delayMicroseconds(500000);
 #else
-    uint8_t chord_chosen = 0;
+    uint8_t *new_chord_pointer;
+
     /**
      * An index into the circle of fifths indicating the base note of
      * the triad for this chord. 0=G-flat, 1=D-flat, 2=E-flat... 6=C, 7=G
      * up to 11=B.
      */
     static uint8_t chord_base;
+    int8_t new_chord_base;
+    static uint8_t chord_base_key_pressed = 0;
+    int8_t new_chord_base_key_pressed;
+
     /**
      * The three modifier strings determine a choice of eight posssible
      * chord types.
      */
     static uint8_t chord_modifier;
+    int8_t new_chord_modifier;
+    static uint8_t chord_modifier_key_pressed = 0;
+    int8_t new_chord_modifier_key_pressed;
 
-    uint8_t *ew_chord_pointer;
-    // first figure out what chord we're using
     for (i = 7; i < NUM_KEYS; i++)
         keyboard[i]->check();
-    chord_base = 6;   // Use C for chord base if none chosen
+
+    new_chord_base_key_pressed = 0;
     for (i = 7; i < 19; i++)
         if (keyboard[i]->state) {
-            chord_base = i - 7;
-            chord_chosen = 1;
+            new_chord_base = i - 7;
+            new_chord_base_key_pressed = 1;
             break;
         }
 
-    if (chord_chosen) {
-        chord_modifier =
-            (keyboard[19]->state ? 4 : 0) +
-            (keyboard[20]->state ? 2 : 0) +
-            (keyboard[21]->state ? 1 : 0);
-        new_chord_pointer = &chord_table[7 * (12 * chord_modifier + chord_base)];
+    new_chord_modifier =
+        (keyboard[19]->state ? 4 : 0) +
+        (keyboard[20]->state ? 2 : 0) +
+        (keyboard[21]->state ? 1 : 0);
+    new_chord_modifier_key_pressed = !!new_chord_modifier;
 
+    if (new_chord_base_key_pressed)
+        chord_base = new_chord_base;
+
+    if (new_chord_base_key_pressed) {
+        if (!chord_base_key_pressed) {
+            chord_modifier = 0;
+        }
+        else {
+            chord_modifier |= new_chord_modifier;
+        }
+    }
+    chord_base_key_pressed = new_chord_base_key_pressed;
+    chord_modifier_key_pressed = new_chord_modifier_key_pressed;
+
+    if (chord_base_key_pressed || chord_modifier_key_pressed) {
+        new_chord_pointer = &chord_table[7 * (12 * chord_modifier + chord_base)];
         if (new_chord_pointer != chord_pointer) {
             chord_pointer = new_chord_pointer;
             for (i = 0; i < 7; i++) {
                 if (keyboard[i]->state &&
-                    chord_pointer[i] != keyboard[i]->last_pitch) {
+                    chord_pointer[i] != ((StringKey*)keyboard[i])->last_pitch) {
                     keyboard[i]->keyup();
                     keyboard[i]->keydown();
                 }
             }
         }
+        chord_pointer = new_chord_pointer;
     }
 
     // select the instrument
@@ -327,9 +350,7 @@ void loop(void) {
             break;
         }
 
-    // now that the chord and instrument are set up, check the strings
     for (i = 0; i < 7; i++)
         keyboard[i]->check();
-    // delayMicroseconds(20 * 1000);  // wait about 20 milliseconds
 #endif
 }
