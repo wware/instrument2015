@@ -284,6 +284,8 @@ void loop(void) {
      * chord types.
      */
     static uint8_t chord_modifier;
+
+    uint8_t *ew_chord_pointer;
     // first figure out what chord we're using
     for (i = 7; i < NUM_KEYS; i++)
         keyboard[i]->check();
@@ -300,7 +302,18 @@ void loop(void) {
             (keyboard[19]->state ? 4 : 0) +
             (keyboard[20]->state ? 2 : 0) +
             (keyboard[21]->state ? 1 : 0);
-        chord_pointer = &chord_table[7 * (12 * chord_modifier + chord_base)];
+        new_chord_pointer = &chord_table[7 * (12 * chord_modifier + chord_base)];
+
+        if (new_chord_pointer != chord_pointer) {
+            chord_pointer = new_chord_pointer;
+            for (i = 0; i < 7; i++) {
+                if (keyboard[i]->state &&
+                    chord_pointer[i] != keyboard[i]->last_pitch) {
+                    keyboard[i]->keyup();
+                    keyboard[i]->keydown();
+                }
+            }
+        }
     }
 
     // select the instrument
