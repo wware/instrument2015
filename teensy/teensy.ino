@@ -288,8 +288,9 @@ void loop(void) {
      * The three modifier strings determine a choice of eight posssible
      * chord types.
      */
+    static uint8_t add_seventh = 0;
     static uint8_t chord_modifier;
-    int8_t new_chord_modifier;
+    uint8_t new_chord_modifier;
     static uint8_t chord_modifier_key_pressed = 0;
     int8_t new_chord_modifier_key_pressed;
 
@@ -306,26 +307,27 @@ void loop(void) {
 
     new_chord_modifier =
         (keyboard[19]->state ? 4 : 0) +
-        (keyboard[20]->state ? 2 : 0) +
-        (keyboard[21]->state ? 1 : 0);
+        (keyboard[20]->state ? 2 : 0);
     new_chord_modifier_key_pressed = !!new_chord_modifier;
+
+    if (new_chord_modifier_key_pressed) {
+        if (keyboard[21]->state) {
+            add_seventh = 1;
+        }
+        else if (!chord_modifier_key_pressed) {
+            add_seventh = 0;
+        }
+        chord_modifier = new_chord_modifier;
+    }
+    chord_modifier_key_pressed = new_chord_modifier_key_pressed;
 
     if (new_chord_base_key_pressed)
         chord_base = new_chord_base;
-
-    if (new_chord_base_key_pressed) {
-        if (!chord_base_key_pressed) {
-            chord_modifier = 0;
-        }
-        else {
-            chord_modifier |= new_chord_modifier;
-        }
-    }
     chord_base_key_pressed = new_chord_base_key_pressed;
-    chord_modifier_key_pressed = new_chord_modifier_key_pressed;
 
     if (chord_base_key_pressed || chord_modifier_key_pressed) {
-        new_chord_pointer = &chord_table[7 * (12 * chord_modifier + chord_base)];
+        uint8_t x = chord_modifier + (add_seventh ? 1 : 0);
+        new_chord_pointer = &chord_table[7 * (12 * x + chord_base)];
         if (new_chord_pointer != chord_pointer) {
             chord_pointer = new_chord_pointer;
             for (i = 0; i < 7; i++) {

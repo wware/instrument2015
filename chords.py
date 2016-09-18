@@ -16,15 +16,15 @@ def get_chord(modifiers):
     # bits 1 and 0 are the next two strings for adding stuff
     #   to the major or minor triad
     return [
-        (0, 4, 7),        # major triad
-        (0, 4, 8),        # augmented
-        (0, 4, 7, 10),    # dominant 7th
-        (0, 4, 8, 11),    # augmented major 7th???
-
+        (0, 4, 7),        # major triad (these first two should never happen)
+        (0, 4, 7, 10),    # major triad dominant 7th
         (0, 3, 7),        # minor triad
-        (0, 3, 7, 11),    # minor major 7th
-        (0, 3, 7, 9),     # minor with diminished 7th
-        (0, 3, 7, 8),     # minor 6th???
+        (0, 3, 7, 10),    # minor with dominant 7th
+
+        (0, 4, 7),        # major triad
+        (0, 4, 7, 10),    # dominant 7th
+        (0, 4, 7),        # major triad
+        (0, 4, 7, 10),    # dominant 7th
     ][modifiers]
 
 def pick_seven(offset, chord):
