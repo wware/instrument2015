@@ -80,11 +80,12 @@ def module(name, pieces):
 
 
 print hack_constants(pieces['constants'])
-print module('halfpipe', pieces)
-print module('machinescrew', pieces)
-print module('plywood', pieces)
-print module('panel', pieces)
-# print 'halfpipe();'
+
+for thing in pieces.keys():
+    if 'structure' in pieces[thing]:
+        print module(thing, pieces)
+
+print 'halfpipe();'
 # print 'machinescrew(2*INCH);'
 # print 'plywood();'
 print 'panel();'
