@@ -1,3 +1,6 @@
+#ifndef KEYS_H_DEFINED
+#define KEYS_H_DEFINED
+
 #define KEYDOWN_HYSTERESIS 10
 
 #ifndef max
@@ -107,3 +110,5 @@ public:
     virtual void keydown(void) {}
     virtual void keyup(void) {}
 };
+
+#endif   // KEYS_H_DEFINED
