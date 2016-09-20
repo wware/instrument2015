@@ -279,31 +279,46 @@ void loop(void) {
      * the triad for this chord. 0=G-flat, 1=D-flat, 2=E-flat... 6=C, 7=G
      * up to 11=B.
      */
+    /*
     static uint8_t chord_base;
     int8_t new_chord_base;
     static uint8_t chord_base_key_pressed = 0;
     int8_t new_chord_base_key_pressed;
+     */
+
+    static KeyState chord_base_state;
+    static KeyState chord_modifier_state;
 
     /**
      * The three modifier strings determine a choice of eight posssible
      * chord types.
      */
     static uint8_t add_seventh = 0;
+
+    /*
     static uint8_t chord_modifier;
     uint8_t new_chord_modifier;
     static uint8_t chord_modifier_key_pressed = 0;
     int8_t new_chord_modifier_key_pressed;
+     */
 
     for (i = 7; i < NUM_KEYS; i++)
         keyboard[i]->check();
 
-    new_chord_base_key_pressed = 0;
+    // new_chord_base_key_pressed = 0;
+    chord_base.unpress();
     for (i = 7; i < 19; i++)
         if (keyboard[i]->state) {
             new_chord_base = i - 7;
-            new_chord_base_key_pressed = 1;
+            chord_base.press();
+            // new_chord_base_key_pressed = 1;
             break;
         }
+
+    chord_modifier.set_new_value(
+        (keyboard[19]->state ? 4 : 0) +
+        (keyboard[20]->state ? 2 : 0)
+    );
 
     new_chord_modifier =
         (keyboard[19]->state ? 4 : 0) +

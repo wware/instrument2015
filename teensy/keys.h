@@ -111,4 +111,18 @@ public:
     virtual void keyup(void) {}
 };
 
+
+class KeyState
+{
+    int8_t value;
+    int8_t new_value;
+    int8_t key_pressed = 0;
+    int8_t new_key_pressed;
+
+public:
+    void unpress(void) { new_key_pressed = 0; }
+    void press(void) { new_key_pressed = 1; }
+    void set_new_value(int8_t x) { new_value = new_key_pressed = x; }
+};
+
 #endif   // KEYS_H_DEFINED
