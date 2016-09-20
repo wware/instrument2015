@@ -112,17 +112,68 @@ public:
 };
 
 
-class KeyState
+class KeyGroup
 {
-    int8_t value;
-    int8_t new_value;
-    int8_t key_pressed = 0;
-    int8_t new_key_pressed;
+protected:
+    int8_t _previous_pressed = 0;
+    int8_t num_keys = 0;
+    int8_t _value;
+    int8_t _any_pressed;
+    BaseKey *keys[16];
+    virtual int8_t raw_value(void) {
+        int8_t i, y = 0, value = 0;
+        for (i = 0; i < num_keys; i++)
+            if (keys[i]->state) {
+                value |= (1 << i);
+                y = 1;
+            }
+        if (y) return value;
+        else return -1;
+    }
 
 public:
-    void unpress(void) { new_key_pressed = 0; }
-    void press(void) { new_key_pressed = 1; }
-    void set_new_value(int8_t x) { new_value = new_key_pressed = x; }
+    KeyGroup(int8_t default_value) {
+        _value = default_value;
+    }
+    void scan(void) {
+        int i = raw_value();
+        if (i != -1) {
+            _any_pressed = 1;
+            _value = i;
+        } else {
+            _any_pressed = 0;
+        }
+    }
+    void add(BaseKey *k) {
+        keys[num_keys++] = k;
+    }
+    void update(void) {
+        _previous_pressed = _any_pressed;
+    }
+    int8_t value(void) {
+        return _value;
+    }
+    int8_t previous_pressed(void) {
+        return _previous_pressed;
+    }
+    int8_t any_pressed(void) {
+        return _any_pressed;
+    }
+};
+
+
+class KeySelect : public KeyGroup
+{
+protected:
+    int8_t raw_value(void) {
+        int8_t i;
+        for (i = 0; i < num_keys; i++)
+            if (keys[i]->state)
+                return i;
+        return -1;
+    }
+public:
+    KeySelect(int8_t default_value) : KeyGroup(default_value) { }
 };
 
 #endif   // KEYS_H_DEFINED

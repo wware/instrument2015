@@ -14,7 +14,7 @@ extern unsigned char chord_table[];
 // Something is wonky about the eight high-numbered key connections
 // on this PC board, probably some kind of assembly error, but the
 // lower 32 are working OK.
-#define NUM_KEYS 32
+#define NUM_KEYS 30
 
 #define DIAGNOSTICS 0
 
@@ -178,7 +178,11 @@ public:
 };
 
 Key *keyboard[NUM_KEYS];
-static uint8_t program = PIANO;
+uint8_t program;
+
+KeySelect chord_base_select(6);
+KeyGroup chord_modifier_group(0);
+KeySelect program_select(0);
 
 void setup() {
     uint8_t j;
@@ -186,8 +190,6 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     uint8_t i;
-
-    usbMIDI.sendProgramChange(CHOIR_AAHS, 1);
 
     pinMode(10, INPUT_PULLUP);
     pinMode(9, OUTPUT);
@@ -214,6 +216,13 @@ void setup() {
     }
 #endif
 
+    for (i = 7; i < 19; i++)
+        chord_base_select.add(keyboard[i]);
+    chord_modifier_group.add(keyboard[19]);
+    chord_modifier_group.add(keyboard[20]);
+    for (i = 22; i < 30; i++)
+        program_select.add(keyboard[i]);
+
     for (i = 0; i < NUM_KEYS; i++) {
         keyboard[i]->fresh_calibrate();
     }
@@ -224,8 +233,9 @@ void setup() {
         }
     }
 
+    program = 0;
     for (i = 0; i < 5; i++) {
-        usbMIDI.sendProgramChange(program, 1);
+        usbMIDI.sendProgramChange(voices[program], 1);
         delayMicroseconds(100 * 1000);
     }
 }
@@ -272,77 +282,35 @@ void loop(void) {
     j = (j + 1) % 4;
     if (j == 0) delayMicroseconds(500000);
 #else
-    uint8_t *new_chord_pointer;
-
-    /**
-     * An index into the circle of fifths indicating the base note of
-     * the triad for this chord. 0=G-flat, 1=D-flat, 2=E-flat... 6=C, 7=G
-     * up to 11=B.
-     */
-    /*
-    static uint8_t chord_base;
-    int8_t new_chord_base;
-    static uint8_t chord_base_key_pressed = 0;
-    int8_t new_chord_base_key_pressed;
-     */
-
-    static KeyState chord_base_state;
-    static KeyState chord_modifier_state;
-
-    /**
-     * The three modifier strings determine a choice of eight posssible
-     * chord types.
-     */
     static uint8_t add_seventh = 0;
-
-    /*
-    static uint8_t chord_modifier;
-    uint8_t new_chord_modifier;
-    static uint8_t chord_modifier_key_pressed = 0;
-    int8_t new_chord_modifier_key_pressed;
-     */
 
     for (i = 7; i < NUM_KEYS; i++)
         keyboard[i]->check();
 
-    // new_chord_base_key_pressed = 0;
-    chord_base.unpress();
-    for (i = 7; i < 19; i++)
-        if (keyboard[i]->state) {
-            new_chord_base = i - 7;
-            chord_base.press();
-            // new_chord_base_key_pressed = 1;
-            break;
-        }
+    chord_base_select.scan();
+    chord_modifier_group.scan();
+    program_select.scan();
 
-    chord_modifier.set_new_value(
-        (keyboard[19]->state ? 4 : 0) +
-        (keyboard[20]->state ? 2 : 0)
-    );
+    int8_t cbs = chord_base_select.any_pressed();
+    int8_t cmg = chord_modifier_group.any_pressed();
+    int8_t ps = program_select.any_pressed();
 
-    new_chord_modifier =
-        (keyboard[19]->state ? 4 : 0) +
-        (keyboard[20]->state ? 2 : 0);
-    new_chord_modifier_key_pressed = !!new_chord_modifier;
-
-    if (new_chord_modifier_key_pressed) {
-        if (keyboard[21]->state) {
-            add_seventh = 1;
-        }
-        else if (!chord_modifier_key_pressed) {
+    if (cmg) {
+        if (!chord_modifier_group.previous_pressed())
             add_seventh = 0;
-        }
-        chord_modifier = new_chord_modifier;
+        else if (keyboard[21]->state)
+            add_seventh = 1;
     }
-    chord_modifier_key_pressed = new_chord_modifier_key_pressed;
 
-    if (new_chord_base_key_pressed)
-        chord_base = new_chord_base;
-    chord_base_key_pressed = new_chord_base_key_pressed;
+    if (cbs || cmg) {
+        uint8_t *new_chord_pointer = &chord_table[
+            7 * (
+                12 * ((chord_modifier_group.value() << 1) +
+                    (add_seventh ? 1 : 0)) +
+                chord_base_select.value()
+            )
+        ];
 
-    if (chord_base_key_pressed || chord_modifier_key_pressed) {
-        uint8_t x = chord_modifier + (add_seventh ? 1 : 0);
-        new_chord_pointer = &chord_table[7 * (12 * x + chord_base)];
         if (new_chord_pointer != chord_pointer) {
             chord_pointer = new_chord_pointer;
             for (i = 0; i < 7; i++) {
@@ -353,19 +321,22 @@ void loop(void) {
                 }
             }
         }
-        chord_pointer = new_chord_pointer;
     }
 
     // select the instrument
-    for (i = 22; i < 30; i++)
-        if (keyboard[i]->state) {
-            i = voices[i - 22];
-            if (i != program) {
-                usbMIDI.sendProgramChange(i, 1);
-                program = i;
-            }
-            break;
+    if (ps && !program_select.previous_pressed()) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        int8_t p = program_select.value();
+        if (p != program) {
+            usbMIDI.sendProgramChange(voices[p], 1);
+            program = p;
         }
+    }
+    else digitalWrite(LED_BUILTIN, LOW);
+
+    chord_base_select.update();
+    chord_modifier_group.update();
+    program_select.update();
 
     for (i = 0; i < 7; i++)
         keyboard[i]->check();
